@@ -10,7 +10,7 @@ const Groups = () => {
 
   const fetchGroups = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/groups');
+      const res = await axios.get('/api/groups');
       setGroups(res.data.groups);
       setPendingInvites(res.data.pendingInvites);
     } catch (error) {
@@ -25,7 +25,7 @@ const Groups = () => {
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/groups', { name: newGroupName });
+      await axios.post('/api/groups', { name: newGroupName });
       setNewGroupName('');
       fetchGroups();
     } catch (error) {
@@ -35,7 +35,7 @@ const Groups = () => {
 
   const handleAcceptInvite = async (groupId) => {
     try {
-      await axios.post(`http://localhost:5000/api/groups/${groupId}/accept`);
+      await axios.post(`/api/groups/${groupId}/accept`);
       fetchGroups();
     } catch (error) {
       console.error(error);

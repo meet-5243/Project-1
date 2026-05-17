@@ -266,7 +266,7 @@ const Dashboard = () => {
 
   const fetchBalances = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/dashboard');
+      const res = await axios.get('/api/dashboard');
       setBalances(res.data);
     } catch (error) {
       console.error(error);
@@ -275,7 +275,7 @@ const Dashboard = () => {
 
   const fetchInsights = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/dashboard/insights');
+      const res = await axios.get('/api/dashboard/insights');
       setInsights(res.data);
     } catch (error) {
       console.error(error);

@@ -134,7 +134,7 @@ const ExpenseAnalytics = () => {
   const fetchData = useCallback(async (v) => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/dashboard/analytics?view=${v}`);
+      const res = await axios.get(`/api/dashboard/analytics?view=${v}`);
       setData(res.data);
     } catch (err) {
       console.error('Analytics fetch error:', err);

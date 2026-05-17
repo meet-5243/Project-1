@@ -24,7 +24,7 @@ const GroupDetails = () => {
     try {
       // In a real app we'd have a specific GET /api/groups/:id, 
       // but we can just fetch all and filter for now to save time
-      const res = await axios.get('http://localhost:5000/api/groups');
+      const res = await axios.get('/api/groups');
       const foundGroup = res.data.groups.find(g => g._id === id);
       setGroup(foundGroup);
       if (foundGroup && user) {
@@ -37,7 +37,7 @@ const GroupDetails = () => {
 
   const fetchExpenses = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/expenses/${id}`);
+      const res = await axios.get(`/api/expenses/${id}`);
       setExpenses(res.data);
     } catch (error) {
       console.error(error);
@@ -52,7 +52,7 @@ const GroupDetails = () => {
   const handleInvite = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`http://localhost:5000/api/groups/${id}/invite`, { email: inviteEmail });
+      await axios.post(`/api/groups/${id}/invite`, { email: inviteEmail });
       setInviteEmail('');
       alert('Invitation sent successfully!');
     } catch (error) {
@@ -84,7 +84,7 @@ const GroupDetails = () => {
         }
       }
 
-      await axios.post('http://localhost:5000/api/expenses', {
+      await axios.post('/api/expenses', {
         groupId: id,
         amount: totalAmount,
         description: expenseDesc,
@@ -131,7 +131,7 @@ const GroupDetails = () => {
 
   const handleMarkAsPaid = async (expenseId, userId, method) => {
     try {
-      await axios.post(`http://localhost:5000/api/expenses/${expenseId}/pay/${userId}`, { method });
+      await axios.post(`/api/expenses/${expenseId}/pay/${userId}`, { method });
       fetchExpenses(); // Refresh the list
     } catch (error) {
       alert(error.response?.data?.error || 'Failed to mark as paid');

@@ -20,7 +20,7 @@ const PayNowButton = ({ payeeName, payeeUpiId, amount, payeeId, onPaymentComplet
   const handleMarkAsPaid = async () => {
     try {
       setLoading(true);
-      await axios.post('http://localhost:5000/api/dashboard/pay', {
+      await axios.post('/api/dashboard/pay', {
         payeeId,
         amount
       });

@@ -34,23 +34,23 @@ const PayNowButton = ({ payeeName, payeeUpiId, amount, payeeId, onPaymentComplet
   };
 
   return (
-    <div className="flex flex-col gap-2 w-full mt-2">
-      <button 
-        onClick={handlePayNow}
-        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
-      >
-        <Send size={18} />
-        Pay ₹{amount} Now
-      </button>
-
-      {showMarkPaid && (
+    <div className="flex items-center gap-2 ml-2">
+      {!showMarkPaid ? (
+        <button 
+          onClick={handlePayNow}
+          className="bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20"
+        >
+          <Send size={14} />
+          Pay
+        </button>
+      ) : (
         <button 
           onClick={handleMarkAsPaid}
           disabled={loading}
-          className="w-full bg-slate-700 hover:bg-slate-600 text-emerald-400 py-2 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 border border-slate-600"
+          className="bg-slate-700 hover:bg-slate-600 text-emerald-400 py-1.5 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-slate-600"
         >
-          <CheckCircle2 size={18} />
-          {loading ? 'Processing...' : 'I have Paid!'}
+          <CheckCircle2 size={14} />
+          {loading ? '...' : 'Paid'}
         </button>
       )}
     </div>

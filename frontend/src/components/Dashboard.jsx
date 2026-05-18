@@ -1,25 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import PayNowButton from './PayNowButton';
 import { useAuth } from '../context/AuthContext';
 import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-
-const CustomTooltip = ({ active, payload }) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="glass-panel p-3 rounded-lg text-sm z-50">
-        <p className="font-bold text-white">{data.name}</p>
-        <p className={data.isOwedToMe ? 'text-emerald-400' : 'text-red-400'}>
-          {data.isOwedToMe ? `Owes you ₹${data.amount}` : `You owe ₹${data.amount}`}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
 
 // ─────────────────────────────────────────────────────────
 // InsightsDrawer — "Where My Money Goes"
@@ -292,14 +276,7 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  const chartData = balances.map((b, i) => ({
-    x: i + 1,
-    y: b.isOwedToMe ? b.amount : -b.amount,
-    z: b.amount,
-    name: b.otherUser.name,
-    amount: b.amount,
-    isOwedToMe: b.isOwedToMe,
-  }));
+
 
   const totalOwe  = balances.filter(b => !b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);
   const totalOwed = balances.filter(b =>  b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);
@@ -370,33 +347,70 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Bubble Chart */}
-      <div className="glass-panel p-4 rounded-3xl mb-8 h-64 relative">
+      {/* Debt Overview: Split Grid */}
+      <div className="mb-8">
         <h2 className="text-sm font-semibold mb-4 text-gray-300">Debt Overview</h2>
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-              <XAxis type="number" dataKey="x" hide />
-              <YAxis type="number" dataKey="y" hide domain={['dataMin - 100', 'dataMax + 100']} />
-              <ZAxis type="number" dataKey="z" range={[500, 4000]} />
-              <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
-              <Scatter data={chartData} shape="circle">
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.isOwedToMe ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)'}
-                    stroke={entry.isOwedToMe ? '#22c55e' : '#ef4444'}
-                    strokeWidth={2}
-                  />
-                ))}
-              </Scatter>
-            </ScatterChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-            No active debts. You're all settled up!
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Left Column: People who owe you */}
+          <div className="p-4 rounded-3xl bg-zinc-900/40 border border-zinc-800 border-t-[3px] border-t-emerald-500 shadow-[0_-4px_20px_-5px_rgba(16,185,129,0.15)] flex flex-col h-full">
+            <h3 className="text-xs text-zinc-400 uppercase tracking-wider mb-4 font-semibold px-1">People who owe you</h3>
+            <div className="flex flex-col gap-3 flex-1">
+              {balances.filter(b => b.isOwedToMe).length > 0 ? (
+                balances.filter(b => b.isOwedToMe).map(b => (
+                  <div key={b.otherUser._id} className="flex items-center justify-between p-3 bg-zinc-950/60 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-400 ring-2 ring-emerald-500/20 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                        {b.otherUser.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-200">{b.otherUser.name}</p>
+                        <p className="text-[10px] text-zinc-500">Owes you</p>
+                      </div>
+                    </div>
+                    <div className="bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
+                      <span className="text-emerald-400 font-black text-sm">₹{b.amount}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-24 bg-zinc-950/40 border border-zinc-800 rounded-2xl">
+                  <span className="text-xs text-zinc-500 font-medium">No one owes you money</span>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Right Column: People you owe */}
+          <div className="p-4 rounded-3xl bg-zinc-900/40 border border-zinc-800 border-t-[3px] border-t-rose-500 shadow-[0_-4px_20px_-5px_rgba(244,63,94,0.15)] flex flex-col h-full">
+            <h3 className="text-xs text-zinc-400 uppercase tracking-wider mb-4 font-semibold px-1">People you owe</h3>
+            <div className="flex flex-col gap-3 flex-1">
+              {balances.filter(b => !b.isOwedToMe).length > 0 ? (
+                balances.filter(b => !b.isOwedToMe).map(b => (
+                  <div key={b.otherUser._id} className="flex items-center justify-between p-3 bg-zinc-950/60 rounded-2xl border border-white/5 hover:border-rose-500/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-rose-500/10 text-rose-400 ring-2 ring-rose-500/20 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                        {b.otherUser.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-200">{b.otherUser.name}</p>
+                        <p className="text-[10px] text-zinc-500">You owe</p>
+                      </div>
+                    </div>
+                    <div className="bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/20">
+                      <span className="text-rose-400 font-black text-sm">₹{b.amount}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-24 bg-zinc-950/40 border border-zinc-800 rounded-2xl">
+                  <span className="text-xs text-zinc-500 font-medium">You're all caught up</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
       </div>
 
       {/* Priority Settlements */}
@@ -404,42 +418,42 @@ const Dashboard = () => {
         <h2 className="text-lg font-bold">Priority Settlements</h2>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {balances.map(balance => (
-          <div key={balance.otherUser._id} className="glass-panel p-5 rounded-3xl flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${balance.isOwedToMe ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                  <UserCircle2 size={24} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg">{balance.otherUser.name}</h3>
-                  <p className="text-xs text-gray-400">{balance.otherUser.upiId || 'No UPI ID'}</p>
-                </div>
+          <div key={balance.otherUser._id} className="glass-panel p-4 rounded-2xl flex items-center justify-between hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${balance.isOwedToMe ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                {balance.otherUser.name.charAt(0).toUpperCase()}
               </div>
-              <div className="text-right">
-                <p className={`text-xl font-bold ${balance.isOwedToMe ? 'text-emerald-400' : 'text-red-400'}`}>
-                  ₹{balance.amount}
-                </p>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">
-                  {balance.isOwedToMe ? 'Owes You' : 'You Owe'}
-                </p>
+              <div className="flex flex-col">
+                <span className="font-bold text-sm text-gray-100">{balance.otherUser.name}</span>
+                <span className="text-[10px] text-gray-400">{balance.otherUser.upiId || 'No UPI ID'}</span>
               </div>
             </div>
-            {!balance.isOwedToMe && balance.otherUser.upiId && (
-              <PayNowButton
-                payeeName={balance.otherUser.name}
-                payeeUpiId={balance.otherUser.upiId}
-                amount={balance.amount}
-                payeeId={balance.otherUser._id}
-                onPaymentComplete={fetchBalances}
-              />
-            )}
+            <div className="flex items-center gap-4">
+              <div className="text-right flex flex-col justify-center">
+                <span className={`text-base font-bold leading-tight ${balance.isOwedToMe ? 'text-emerald-400' : 'text-red-400'}`}>
+                  ₹{balance.amount}
+                </span>
+                <span className="text-[9px] text-gray-500 uppercase tracking-wider">
+                  {balance.isOwedToMe ? 'Owes You' : 'You Owe'}
+                </span>
+              </div>
+              {!balance.isOwedToMe && balance.otherUser.upiId && (
+                <PayNowButton
+                  payeeName={balance.otherUser.name}
+                  payeeUpiId={balance.otherUser.upiId}
+                  amount={balance.amount}
+                  payeeId={balance.otherUser._id}
+                  onPaymentComplete={fetchBalances}
+                />
+              )}
+            </div>
           </div>
         ))}
 
         {balances.length === 0 && (
-          <div className="text-center py-10 text-gray-500 glass-panel rounded-3xl">
+          <div className="text-center py-8 text-gray-500 glass-panel rounded-2xl text-sm">
             You don't owe anyone, and nobody owes you.
           </div>
         )}

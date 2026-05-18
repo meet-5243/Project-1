@@ -20,6 +20,22 @@ const GroupDetails = () => {
   const [expandedExpenses, setExpandedExpenses] = useState({});
   const [activeLeftTab, setActiveLeftTab] = useState('members'); // 'members' or 'leaderboards'
 
+  const getLocalDateStringInit = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayInit = new Date();
+  const yesterdayDateInit = new Date(todayInit);
+  yesterdayDateInit.setDate(todayInit.getDate() - 1);
+  const initialYesterday = getLocalDateStringInit(yesterdayDateInit);
+
+  const [filterType, setFilterType] = useState('yesterday'); // 'yesterday', 'specific_date', 'member'
+  const [selectedDate, setSelectedDate] = useState(initialYesterday);
+  const [selectedMember, setSelectedMember] = useState('');
+
   const fetchGroupDetails = async () => {
     try {
       // In a real app we'd have a specific GET /api/groups/:id, 
@@ -169,8 +185,30 @@ const GroupDetails = () => {
   const mostGenerous = Object.values(memberStats).sort((a, b) => b.paidTotal - a.paidTotal).filter(s => s.paidTotal > 0);
   const bigSpenders = Object.values(memberStats).sort((a, b) => b.spentTotal - a.spentTotal).filter(s => s.spentTotal > 0);
 
-  const pendingExpenses = expenses.filter(exp => exp.involvedMembers.some(m => m.paymentStatus === 'PENDING'));
-  const completedExpenses = expenses.filter(exp => exp.involvedMembers.every(m => m.paymentStatus !== 'PENDING'));
+  const getLocalDateString = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const filteredExpenses = expenses.filter(exp => {
+    if (filterType === 'member') {
+      return exp.creatorId._id === selectedMember;
+    }
+
+    const expDateStr = getLocalDateString(new Date(exp.createdAt));
+    if (filterType === 'yesterday') {
+      return expDateStr === initialYesterday;
+    } else if (filterType === 'specific_date') {
+      return expDateStr === selectedDate;
+    }
+    
+    return true;
+  });
+
+  const pendingExpenses = filteredExpenses.filter(exp => exp.involvedMembers.some(m => m.paymentStatus === 'PENDING'));
+  const completedExpenses = filteredExpenses.filter(exp => exp.involvedMembers.every(m => m.paymentStatus !== 'PENDING'));
 
   const renderExpenseList = (list) => {
     if (list.length === 0) {
@@ -192,8 +230,10 @@ const GroupDetails = () => {
                 {expense.description}
                 {isCompleted && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Settled</span>}
               </h3>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                 Paid by <span className="font-semibold text-gray-300">{expense.creatorId.name}</span>
+                <span className="text-white/20">•</span>
+                <span>{new Date(expense.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -465,6 +505,54 @@ const GroupDetails = () => {
                 </button>
               </form>
             )}
+
+            {/* Filters */}
+            <div className="mb-6 p-4 bg-[#0a0a0a]/30 border border-white/5 rounded-2xl">
+              <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => { setFilterType('yesterday'); setSelectedDate(initialYesterday); setSelectedMember(''); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'yesterday' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                  >
+                    Yesterday
+                  </button>
+                  <div className="relative">
+                    <input 
+                      type="date" 
+                      value={selectedDate}
+                      onChange={(e) => {
+                        setSelectedDate(e.target.value);
+                        setFilterType('specific_date');
+                        setSelectedMember('');
+                      }}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer ${filterType === 'specific_date' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                      style={{ colorScheme: 'dark' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-1 max-w-xs">
+                  <select
+                    value={selectedMember}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedMember(e.target.value);
+                        setFilterType('member');
+                      } else {
+                        setSelectedMember('');
+                        setFilterType('yesterday');
+                      }
+                    }}
+                    className={`w-full px-4 py-2 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer ${filterType === 'member' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                  >
+                    <option value="" className="bg-[#0a0a0a] text-white">Filter by Member (Lifetime Paid)</option>
+                    {group.members.map(m => (
+                      <option key={m._id} value={m._id} className="bg-[#0a0a0a] text-white">{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
 
             {/* Expense Lists */}
             <div className="flex flex-col gap-6">

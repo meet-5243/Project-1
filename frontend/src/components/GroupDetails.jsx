@@ -28,12 +28,14 @@ const GroupDetails = () => {
   };
 
   const todayInit = new Date();
+  const initialToday = getLocalDateStringInit(todayInit);
+  
   const yesterdayDateInit = new Date(todayInit);
   yesterdayDateInit.setDate(todayInit.getDate() - 1);
   const initialYesterday = getLocalDateStringInit(yesterdayDateInit);
 
-  const [filterType, setFilterType] = useState('yesterday'); // 'yesterday', 'specific_date', 'member'
-  const [selectedDate, setSelectedDate] = useState(initialYesterday);
+  const [filterType, setFilterType] = useState('today'); // 'today', 'yesterday', 'specific_date', 'member'
+  const [selectedDate, setSelectedDate] = useState(initialToday);
   const [selectedMember, setSelectedMember] = useState('');
 
   const fetchGroupDetails = async () => {
@@ -198,7 +200,9 @@ const GroupDetails = () => {
     }
 
     const expDateStr = getLocalDateString(new Date(exp.createdAt));
-    if (filterType === 'yesterday') {
+    if (filterType === 'today') {
+      return expDateStr === initialToday;
+    } else if (filterType === 'yesterday') {
       return expDateStr === initialYesterday;
     } else if (filterType === 'specific_date') {
       return expDateStr === selectedDate;
@@ -511,6 +515,12 @@ const GroupDetails = () => {
               <div className="flex flex-wrap gap-4 items-center justify-between">
                 <div className="flex gap-2">
                   <button 
+                    onClick={() => { setFilterType('today'); setSelectedDate(initialToday); setSelectedMember(''); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'today' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                  >
+                    Today
+                  </button>
+                  <button 
                     onClick={() => { setFilterType('yesterday'); setSelectedDate(initialYesterday); setSelectedMember(''); }}
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'yesterday' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                   >
@@ -540,7 +550,7 @@ const GroupDetails = () => {
                         setFilterType('member');
                       } else {
                         setSelectedMember('');
-                        setFilterType('yesterday');
+                        setFilterType('today');
                       }
                     }}
                     className={`w-full px-4 py-2 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer ${filterType === 'member' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}

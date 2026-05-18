@@ -34,8 +34,8 @@ const GroupDetails = () => {
   yesterdayDateInit.setDate(todayInit.getDate() - 1);
   const initialYesterday = getLocalDateStringInit(yesterdayDateInit);
 
-  const [filterType, setFilterType] = useState('today'); // 'today', 'yesterday', 'specific_date', 'member'
-  const [selectedDate, setSelectedDate] = useState(initialToday);
+  const [filterType, setFilterType] = useState('all'); // 'all', 'today', 'yesterday', 'specific_date', 'member'
+  const [selectedDate, setSelectedDate] = useState(initialYesterday);
   const [selectedMember, setSelectedMember] = useState('');
 
   const fetchGroupDetails = async () => {
@@ -120,6 +120,42 @@ const GroupDetails = () => {
     }
   };
 
+  const handleToggleExpenseForm = () => {
+    const nextShow = !showExpenseForm;
+    setShowExpenseForm(nextShow);
+    if (nextShow && group) {
+      // Pre-select all members of the group by default
+      const defaultSplits = {};
+      group.members.forEach(m => {
+        defaultSplits[m._id] = '';
+      });
+      setSplits(defaultSplits);
+    }
+  };
+
+  const handleAmountChange = (val) => {
+    setExpenseAmount(val);
+    const amount = parseFloat(val);
+    if (!isNaN(amount) && amount > 0) {
+      const selectedMemberIds = Object.keys(splits);
+      if (selectedMemberIds.length > 0) {
+        const equalAmount = (amount / selectedMemberIds.length).toFixed(2);
+        const newSplits = {};
+        selectedMemberIds.forEach(id => {
+          newSplits[id] = equalAmount;
+        });
+        setSplits(newSplits);
+      }
+    } else {
+      // Reset splits to blank values if amount is cleared
+      const newSplits = {};
+      Object.keys(splits).forEach(id => {
+        newSplits[id] = '';
+      });
+      setSplits(newSplits);
+    }
+  };
+
   const toggleMemberSelection = (memberId) => {
     setSplits(prev => {
       const newSplits = { ...prev };
@@ -127,6 +163,18 @@ const GroupDetails = () => {
         delete newSplits[memberId];
       } else {
         newSplits[memberId] = '';
+      }
+
+      // Auto-recalculate split if there is a total amount entered
+      const amount = parseFloat(expenseAmount);
+      if (!isNaN(amount) && amount > 0) {
+        const selectedMemberIds = Object.keys(newSplits);
+        if (selectedMemberIds.length > 0) {
+          const equalAmount = (amount / selectedMemberIds.length).toFixed(2);
+          selectedMemberIds.forEach(id => {
+            newSplits[id] = equalAmount;
+          });
+        }
       }
       return newSplits;
     });
@@ -194,20 +242,29 @@ const GroupDetails = () => {
     return `${year}-${month}-${day}`;
   };
 
+  // Timezone-safe: compares date strings in LOCAL time, not UTC
+  const toLocalDateStr = (isoString) => {
+    const d = new Date(isoString);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day   = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const filteredExpenses = expenses.filter(exp => {
+    if (filterType === 'all') return true;
+
     if (filterType === 'member') {
+      if (!selectedMember) return true;
+      // Show expenses paid by this member (lifetime payments made by them)
       return exp.creatorId._id === selectedMember;
     }
 
-    const expDateStr = getLocalDateString(new Date(exp.createdAt));
-    if (filterType === 'today') {
-      return expDateStr === initialToday;
-    } else if (filterType === 'yesterday') {
-      return expDateStr === initialYesterday;
-    } else if (filterType === 'specific_date') {
-      return expDateStr === selectedDate;
-    }
-    
+    const expDateStr = toLocalDateStr(exp.createdAt);
+    if (filterType === 'today')         return expDateStr === initialToday;
+    if (filterType === 'yesterday')     return expDateStr === initialYesterday;
+    if (filterType === 'specific_date') return expDateStr === selectedDate;
+
     return true;
   });
 
@@ -425,7 +482,7 @@ const GroupDetails = () => {
                 Group Expenses
               </h2>
               <button 
-                onClick={() => setShowExpenseForm(!showExpenseForm)}
+                onClick={handleToggleExpenseForm}
                 className="text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1 text-sm font-bold"
               >
                 <PlusCircle size={16} />
@@ -446,7 +503,7 @@ const GroupDetails = () => {
                   type="number" 
                   placeholder="Total Amount Paid (₹)" 
                   className="w-full bg-[#0a0a0a]/50 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
-                  value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} required 
+                  value={expenseAmount} onChange={e => handleAmountChange(e.target.value)} required 
                 />
                 
                 <div className="mb-4">
@@ -513,15 +570,21 @@ const GroupDetails = () => {
             {/* Filters */}
             <div className="mb-6 p-4 bg-[#0a0a0a]/30 border border-white/5 rounded-2xl">
               <div className="flex flex-wrap gap-4 items-center justify-between">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <button 
-                    onClick={() => { setFilterType('today'); setSelectedDate(initialToday); setSelectedMember(''); }}
+                    onClick={() => { setFilterType('all'); setSelectedMember(''); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'all' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                  >
+                    All Time
+                  </button>
+                  <button 
+                    onClick={() => { setFilterType('today'); setSelectedMember(''); }}
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'today' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                   >
                     Today
                   </button>
                   <button 
-                    onClick={() => { setFilterType('yesterday'); setSelectedDate(initialYesterday); setSelectedMember(''); }}
+                    onClick={() => { setFilterType('yesterday'); setSelectedMember(''); }}
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'yesterday' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                   >
                     Yesterday
@@ -550,7 +613,7 @@ const GroupDetails = () => {
                         setFilterType('member');
                       } else {
                         setSelectedMember('');
-                        setFilterType('today');
+                        setFilterType('all');
                       }
                     }}
                     className={`w-full px-4 py-2 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer ${filterType === 'member' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
@@ -566,9 +629,15 @@ const GroupDetails = () => {
 
             {/* Expense Lists */}
             <div className="flex flex-col gap-6">
-              {expenses.length === 0 && (
-                <div className="text-center py-6 text-gray-500 text-sm">
-                  No expenses added yet, or you're not involved in any.
+              {filteredExpenses.length === 0 && (
+                <div className="text-center py-8 bg-white/3 rounded-2xl border border-white/5">
+                  <p className="text-gray-500 text-sm">
+                    {filterType === 'today'         && 'No expenses added today.'}
+                    {filterType === 'yesterday'     && 'No expenses added yesterday.'}
+                    {filterType === 'specific_date' && `No expenses on ${selectedDate}.`}
+                    {filterType === 'member'        && 'No expenses found for this member.'}
+                    {filterType === 'all'           && 'No expenses added yet.'}
+                  </p>
                 </div>
               )}
               

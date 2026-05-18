@@ -245,6 +245,7 @@ const Dashboard = () => {
   const [balances, setBalances]         = useState([]);
   const [insights, setInsights]         = useState([]);
   const [insightsOpen, setInsightsOpen] = useState(false);
+  const [showSettleModal, setShowSettleModal] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -280,9 +281,66 @@ const Dashboard = () => {
 
   const totalOwe  = balances.filter(b => !b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);
   const totalOwed = balances.filter(b =>  b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);
+  const oweBalances = balances.filter(b => !b.isOwedToMe);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8 font-sans">
+
+      {/* Settle Balance Modal */}
+      {showSettleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950/50">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Wallet className="text-rose-500" size={20} />
+                Settle Balances
+              </h2>
+              <button onClick={() => setShowSettleModal(false)} className="text-zinc-400 hover:text-white transition-colors p-1.5 bg-white/5 rounded-full hover:bg-white/10">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-3 max-h-[60vh] overflow-y-auto">
+              {oweBalances.map(balance => (
+                <div key={balance.otherUser._id} className="p-4 rounded-2xl flex flex-col sm:flex-row gap-4 items-center justify-between bg-zinc-950/60 border border-white/5 hover:border-rose-500/30 transition-colors">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0 bg-rose-500/10 text-rose-400 ring-2 ring-rose-500/20">
+                      {balance.otherUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm text-gray-100">{balance.otherUser.name}</span>
+                      <span className="text-[10px] text-zinc-500">{balance.otherUser.upiId || 'No UPI ID'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t border-white/5 sm:border-t-0 pt-3 sm:pt-0">
+                    <div className="text-left sm:text-right flex flex-col justify-center">
+                      <span className="text-base font-black leading-tight text-rose-400">
+                        ₹{balance.amount}
+                      </span>
+                      <span className="text-[9px] text-zinc-500 uppercase tracking-wider">
+                        You Owe
+                      </span>
+                    </div>
+                    {balance.otherUser.upiId && (
+                      <PayNowButton
+                        payeeName={balance.otherUser.name}
+                        payeeUpiId={balance.otherUser.upiId}
+                        amount={balance.amount}
+                        payeeId={balance.otherUser._id}
+                        onPaymentComplete={fetchBalances}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+              {oweBalances.length === 0 && (
+                <div className="text-center py-8 text-zinc-500 bg-zinc-950/40 rounded-2xl text-sm border border-zinc-800">
+                  You're all settled up!
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Where My Money Goes — slide-up drawer */}
       <InsightsDrawer
@@ -383,7 +441,18 @@ const Dashboard = () => {
 
           {/* Right Column: People you owe */}
           <div className="p-4 rounded-3xl bg-zinc-900/40 border border-zinc-800 border-t-[3px] border-t-rose-500 shadow-[0_-4px_20px_-5px_rgba(244,63,94,0.15)] flex flex-col h-full">
-            <h3 className="text-xs text-zinc-400 uppercase tracking-wider mb-4 font-semibold px-1">People you owe</h3>
+            <div className="flex items-center justify-between mb-4 px-1">
+              <h3 className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">People you owe</h3>
+              {oweBalances.length > 0 && (
+                <button 
+                  onClick={() => setShowSettleModal(true)}
+                  className="bg-rose-500 hover:bg-rose-600 text-white text-[10px] uppercase tracking-wider font-bold py-1 px-3 rounded-full transition-colors shadow-[0_0_12px_rgba(244,63,94,0.4)] flex items-center gap-1.5"
+                >
+                  <Wallet size={12} />
+                  Settle Balance
+                </button>
+              )}
+            </div>
             <div className="flex flex-col gap-3 flex-1">
               {balances.filter(b => !b.isOwedToMe).length > 0 ? (
                 balances.filter(b => !b.isOwedToMe).map(b => (
@@ -413,51 +482,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Priority Settlements */}
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold">Priority Settlements</h2>
-      </div>
 
-      <div className="flex flex-col gap-3">
-        {balances.map(balance => (
-          <div key={balance.otherUser._id} className="glass-panel p-4 rounded-2xl flex items-center justify-between hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${balance.isOwedToMe ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                {balance.otherUser.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-sm text-gray-100">{balance.otherUser.name}</span>
-                <span className="text-[10px] text-gray-400">{balance.otherUser.upiId || 'No UPI ID'}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right flex flex-col justify-center">
-                <span className={`text-base font-bold leading-tight ${balance.isOwedToMe ? 'text-emerald-400' : 'text-red-400'}`}>
-                  ₹{balance.amount}
-                </span>
-                <span className="text-[9px] text-gray-500 uppercase tracking-wider">
-                  {balance.isOwedToMe ? 'Owes You' : 'You Owe'}
-                </span>
-              </div>
-              {!balance.isOwedToMe && balance.otherUser.upiId && (
-                <PayNowButton
-                  payeeName={balance.otherUser.name}
-                  payeeUpiId={balance.otherUser.upiId}
-                  amount={balance.amount}
-                  payeeId={balance.otherUser._id}
-                  onPaymentComplete={fetchBalances}
-                />
-              )}
-            </div>
-          </div>
-        ))}
-
-        {balances.length === 0 && (
-          <div className="text-center py-8 text-gray-500 glass-panel rounded-2xl text-sm">
-            You don't owe anyone, and nobody owes you.
-          </div>
-        )}
-      </div>
     </div>
   );
 };

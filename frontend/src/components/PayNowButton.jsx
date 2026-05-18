@@ -1,59 +1,51 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Send, CheckCircle2 } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 
 const PayNowButton = ({ payeeName, payeeUpiId, amount, payeeId, onPaymentComplete }) => {
   const [loading, setLoading] = useState(false);
-  const [showMarkPaid, setShowMarkPaid] = useState(false);
+  const [paid, setPaid] = useState(false);
 
-  const handlePayNow = () => {
-    // Generate standard Indian UPI deep link
-    const upiUrl = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Hostel_Settlement`;
-    
-    // Attempt to open link (will work on mobile devices with UPI apps)
-    window.location.href = upiUrl;
-
-    // Show the manual "Mark as Paid" button after they click Pay
-    setShowMarkPaid(true);
-  };
-
-  const handleMarkAsPaid = async () => {
+  const handlePay = async () => {
+    if (loading || paid) return;
     try {
       setLoading(true);
-      await axios.post('/api/dashboard/pay', {
-        payeeId,
-        amount
-      });
+
+      // 1. Open the UPI deep link (works on mobile with UPI apps installed)
+      const upiUrl = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Hostel_Settlement`;
+      window.open(upiUrl, '_blank');
+
+      // 2. Mark as paid in the backend immediately
+      await axios.post('/api/dashboard/pay', { payeeId, amount });
+
+      setPaid(true);
+
+      // 3. Refresh the balances list — entry will vanish from the UI
       onPaymentComplete();
     } catch (error) {
-      console.error(error);
-      alert('Error marking as paid');
+      console.error('Payment error:', error);
+      alert('Error recording payment. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-2 ml-2">
-      {!showMarkPaid ? (
-        <button 
-          onClick={handlePayNow}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20"
-        >
-          <Send size={14} />
-          Pay
-        </button>
-      ) : (
-        <button 
-          onClick={handleMarkAsPaid}
-          disabled={loading}
-          className="bg-slate-700 hover:bg-slate-600 text-emerald-400 py-1.5 px-4 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-slate-600"
-        >
-          <CheckCircle2 size={14} />
-          {loading ? '...' : 'Paid'}
-        </button>
-      )}
-    </div>
+    <button
+      onClick={handlePay}
+      disabled={loading || paid}
+      className={`flex items-center justify-center gap-1.5 py-1.5 px-4 rounded-full text-xs font-bold transition-all
+        ${paid
+          ? 'bg-zinc-700 text-zinc-400 cursor-default'
+          : 'bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40'
+        }`}
+    >
+      {loading
+        ? <Loader2 size={13} className="animate-spin" />
+        : <Send size={13} />
+      }
+      {loading ? 'Paying...' : paid ? 'Paid!' : 'Pay Now'}
+    </button>
   );
 };
 

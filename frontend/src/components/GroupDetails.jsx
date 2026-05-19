@@ -287,7 +287,7 @@ const GroupDetails = () => {
             onClick={() => toggleExpenseExpand(expense._id)}
           >
             <div>
-              <h3 className="font-bold text-lg flex items-center gap-2">
+              <h3 className="font-bold text-base md:text-lg flex items-center gap-2 truncate">
                 {expense.description}
                 {isCompleted && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Settled</span>}
               </h3>
@@ -357,7 +357,7 @@ const GroupDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-8 font-sans pb-20 md:pb-8">
       <header className="flex items-center gap-4 mb-8">
         <Link to="/groups" className="p-2 glass-panel rounded-full hover:bg-white/10 transition">
           <ArrowLeft size={20} />
@@ -368,7 +368,7 @@ const GroupDetails = () => {
         </div>
       </header>
 
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {/* Left Column: Members & Invites */}
         <div className="flex flex-col gap-6">
           <div className="glass-panel p-6 rounded-3xl">
@@ -568,24 +568,23 @@ const GroupDetails = () => {
             )}
 
             {/* Filters */}
-            <div className="mb-6 p-4 bg-[#0a0a0a]/30 border border-white/5 rounded-2xl">
-              <div className="flex flex-wrap gap-4 items-center justify-between">
-                <div className="flex gap-2 flex-wrap">
+            <div className="mb-6 p-3 bg-[#0a0a0a]/30 border border-white/5 rounded-2xl">
+              <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 md:flex-wrap md:overflow-visible [&::-webkit-scrollbar]:hidden">
                   <button 
                     onClick={() => { setFilterType('all'); setSelectedMember(''); }}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'all' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                    className={`px-4 py-2 rounded-full text-xs font-medium transition-all shrink-0 ${filterType === 'all' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                   >
                     All Time
                   </button>
                   <button 
                     onClick={() => { setFilterType('today'); setSelectedMember(''); }}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'today' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                    className={`px-4 py-2 rounded-full text-xs font-medium transition-all shrink-0 ${filterType === 'today' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                   >
                     Today
                   </button>
                   <button 
                     onClick={() => { setFilterType('yesterday'); setSelectedMember(''); }}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filterType === 'yesterday' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                    className={`px-4 py-2 rounded-full text-xs font-medium transition-all shrink-0 ${filterType === 'yesterday' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                   >
                     Yesterday
                   </button>
@@ -598,13 +597,12 @@ const GroupDetails = () => {
                         setFilterType('specific_date');
                         setSelectedMember('');
                       }}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer ${filterType === 'specific_date' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                      className={`px-4 py-2 rounded-full text-xs font-medium outline-none transition-all cursor-pointer shrink-0 ${filterType === 'specific_date' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                       style={{ colorScheme: 'dark' }}
                     />
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-1 max-w-xs">
+                
+                <div className="flex items-center gap-2 shrink-0 min-w-[160px] max-w-xs">
                   <select
                     value={selectedMember}
                     onChange={(e) => {
@@ -616,7 +614,7 @@ const GroupDetails = () => {
                         setFilterType('all');
                       }
                     }}
-                    className={`w-full px-4 py-2 rounded-xl text-sm font-bold outline-none transition-all cursor-pointer ${filterType === 'member' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                    className={`w-full px-4 py-2 rounded-full text-xs font-medium outline-none transition-all cursor-pointer ${filterType === 'member' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                   >
                     <option value="" className="bg-[#0a0a0a] text-white">Filter by Member (Lifetime Paid)</option>
                     {group.members.map(m => (

@@ -1,7 +1,8 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const Group = require('../models/Group');
 const User = require('../models/User');
+const Expense = require('../models/Expense');
 const { authenticate } = require('./auth');
 
 // Create a group
@@ -71,10 +72,38 @@ router.post('/:groupId/accept', authenticate, async (req, res) => {
 // Get user's groups and pending invites
 router.get('/', authenticate, async (req, res) => {
   try {
-    const groups = await Group.find({ members: req.userId }).populate('members', 'name email').populate('pendingInvites', 'name email');
-    const pendingInvites = await Group.find({ pendingInvites: req.userId }).populate('members', 'name email');
+    const groups = await Group.find({ members: req.userId })
+      .populate('members', 'name email')
+      .populate('pendingInvites', 'name email')
+      .populate('creator', 'name email');
+    const pendingInvites = await Group.find({ pendingInvites: req.userId })
+      .populate('members', 'name email')
+      .populate('creator', 'name email');
     res.json({ groups, pendingInvites });
   } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete a group (creator only)
+router.delete('/:groupId', authenticate, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.groupId);
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+
+    if (group.creator.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Only the creator can delete this group' });
+    }
+
+    // Delete all associated expenses
+    await Expense.deleteMany({ groupId: req.params.groupId });
+
+    // Delete the group
+    await Group.findByIdAndDelete(req.params.groupId);
+
+    res.json({ message: 'Group deleted successfully' });
+  } catch (error) {
+    console.error('Delete group error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

@@ -376,16 +376,16 @@ const GroupDetails = () => {
               <Users size={20} className="text-primary" /> 
               Invite Members
             </h2>
-            <form onSubmit={handleInvite} className="flex gap-3">
+            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
               <input 
                 type="email" 
                 placeholder="Friend's Email Address"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
+                className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
                 required
               />
-              <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 rounded-xl transition flex items-center gap-2 font-bold">
+              <button type="submit" className="shrink-0 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 sm:py-0 rounded-xl transition flex items-center justify-center gap-2 font-bold">
                 <UserPlus size={18} />
                 Invite
               </button>

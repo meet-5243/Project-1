@@ -34,7 +34,7 @@ const GroupDetails = () => {
   yesterdayDateInit.setDate(todayInit.getDate() - 1);
   const initialYesterday = getLocalDateStringInit(yesterdayDateInit);
 
-  const [filterType, setFilterType] = useState('all'); // 'all', 'today', 'yesterday', 'specific_date', 'member'
+  const [filterType, setFilterType] = useState('today'); // 'all', 'today', 'yesterday', 'specific_date', 'member'
   const [selectedDate, setSelectedDate] = useState(initialYesterday);
   const [selectedMember, setSelectedMember] = useState('');
 

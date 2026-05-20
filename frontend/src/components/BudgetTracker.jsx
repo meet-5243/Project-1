@@ -203,6 +203,7 @@ const BudgetTracker = ({ open, onClose }) => {
         </>
       );
     }
+  } // close outer else (loading/budgetStatus check)
 
   return (
     <>

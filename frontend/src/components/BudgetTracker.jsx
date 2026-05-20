@@ -191,8 +191,8 @@ const BudgetTracker = ({ open, onClose }) => {
             </div>
           </div>
 
-          {/* Sticky edit button - always visible above mobile nav */}
-          <div className="px-4 pt-3 pb-24 border-t border-white/5 bg-[#111214]">
+          {/* Sticky edit button - always visible */}
+          <div className="px-4 pt-3 pb-4 border-t border-white/5 bg-[#111214]">
             <button 
               onClick={() => setShowModal(true)}
               className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold py-4 rounded-2xl border border-emerald-500/30 transition-colors text-base tracking-wide"
@@ -211,7 +211,7 @@ const BudgetTracker = ({ open, onClose }) => {
         className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
       />
       <div 
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-[#111214] border border-white/10 rounded-t-[32px] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${open ? 'translate-y-0' : 'translate-y-full'}`}
+        className={`fixed bottom-16 md:bottom-0 left-0 right-0 z-50 bg-[#111214] border border-white/10 rounded-t-[32px] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${open ? 'translate-y-0' : 'translate-y-full'}`}
         style={{ height: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 -8px 40px rgba(0,0,0,0.6)' }}
       >
         <div className="flex justify-center pt-3 pb-1">

@@ -75,23 +75,28 @@ const renderDonutLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent,
 // Stat Card
 // ────────────────────────────────────────────────────────────
 const StatCard = ({ icon: Icon, label, value, color }) => (
-  <div style={{
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 20,
-    padding: '16px 20px',
-    flex: 1,
-    minWidth: 0,
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+  <div
+    className="flex flex-col items-center justify-between p-3 min-h-[90px] text-center w-full min-w-0"
+    style={{
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: 20,
+    }}
+  >
+    <div className="flex flex-col xs:flex-row items-center gap-1 mb-2">
       <div style={{ background: `${color}22`, borderRadius: 8, padding: 6, display: 'flex' }}>
         <Icon size={14} style={{ color }} />
       </div>
-      <span style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+      <span className="text-[10px] sm:text-xs font-bold text-zinc-400 uppercase tracking-tight leading-tight max-w-full text-center balance-text">
         {label}
       </span>
     </div>
-    <p style={{ fontSize: 22, fontWeight: 800, color, margin: 0 }}>{value}</p>
+    <span
+      className="text-sm sm:text-base font-bold mt-1 block truncate"
+      style={{ color }}
+    >
+      {value}
+    </span>
   </div>
 );
 
@@ -157,7 +162,7 @@ const ExpenseAnalytics = () => {
     if (!data) return null;
     if (data.view === 'daily') {
       return (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div className="grid grid-cols-3 gap-2.5 w-full px-1 mb-6">
           <StatCard icon={IndianRupee} label="This Week" value={`₹${data.total}`} color="#34d399" />
           <StatCard icon={TrendingUp}  label="Daily Avg"  value={`₹${data.avg}`}   color="#22d3ee" />
           <StatCard icon={Zap}         label="Peak Day"   value={data.peak || '—'}  color="#a78bfa" />
@@ -166,7 +171,7 @@ const ExpenseAnalytics = () => {
     }
     if (data.view === 'monthly') {
       return (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div className="grid grid-cols-3 gap-2.5 w-full px-1 mb-6">
           <StatCard icon={IndianRupee} label="This Month" value={`₹${data.total}`}       color="#34d399" />
           <StatCard icon={TrendingUp}  label="Daily Avg"  value={`₹${data.avg}`}          color="#22d3ee" />
           <StatCard icon={Zap}         label="Peak Day"   value={`Day ${data.peakDay || '—'}`} color="#fb923c" />
@@ -175,7 +180,7 @@ const ExpenseAnalytics = () => {
     }
     if (data.view === 'yearly') {
       return (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div className="grid grid-cols-3 gap-2.5 w-full px-1 mb-6">
           <StatCard icon={IndianRupee} label="This Year"  value={`₹${data.total}`}       color="#34d399" />
           <StatCard icon={TrendingUp}  label="Monthly Avg" value={`₹${data.avg}`}        color="#22d3ee" />
           <StatCard icon={Zap}         label="Peak Month" value={data.peakMonth || '—'} color="#f472b6" />

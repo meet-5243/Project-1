@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, UserCircle, Save } from 'lucide-react';
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, sendOtp } = useAuth();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -12,6 +12,9 @@ const Profile = () => {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  
+  const [showOtpField, setShowOtpField] = useState(false);
+  const [otp, setOtp] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -28,11 +31,22 @@ const Profile = () => {
     
     try {
       const updateData = { name, email, upiId };
-      if (password) updateData.password = password;
+      if (password) {
+        if (!showOtpField) {
+          await sendOtp(user.email, 'password_change');
+          setShowOtpField(true);
+          setMessage('An OTP has been sent to your email to verify password change.');
+          return;
+        }
+        updateData.password = password;
+        updateData.otp = otp;
+      }
       
       await updateProfile(updateData);
       setMessage('Profile updated successfully!');
       setPassword(''); // clear password field after successful update
+      setShowOtpField(false);
+      setOtp('');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update profile');
     }
@@ -94,12 +108,33 @@ const Profile = () => {
                 placeholder="••••••••"
                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
                 value={password} onChange={e => setPassword(e.target.value)} 
+                disabled={showOtpField}
               />
             </div>
             
+            {showOtpField && (
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Verification OTP</label>
+                <input 
+                  type="text" 
+                  placeholder="Enter 6-digit OTP"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition text-center tracking-widest text-lg"
+                  value={otp} onChange={e => setOtp(e.target.value)} required
+                  maxLength={6}
+                />
+                <button 
+                  type="button" 
+                  onClick={() => { setShowOtpField(false); setOtp(''); setMessage(''); }}
+                  className="text-xs text-gray-400 hover:text-white mt-2 block"
+                >
+                  Cancel password change
+                </button>
+              </div>
+            )}
+            
             <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition mt-4 flex justify-center items-center gap-2">
               <Save size={20} />
-              Save Changes
+              {showOtpField ? 'Verify & Save Changes' : 'Save Changes'}
             </button>
           </form>
         </div>

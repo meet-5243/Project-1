@@ -8,7 +8,6 @@ const OTP = require('../models/OTP');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hostel-secret-key';
 
-// Configure Nodemailer
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -53,14 +52,24 @@ router.post('/send-otp', async (req, res) => {
     const otpRecord = new OTP({ email, otp: otpCode });
     await otpRecord.save();
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    await transporter.sendMail({
+      from: `"HostelSplit" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: 'Your HostelSplit OTP',
-      text: `Your OTP for HostelSplit signup is: ${otpCode}. It is valid for 10 minutes.`
-    };
+      subject: '🔑 Your HostelSplit OTP Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #0a0a0a; color: #ffffff; padding: 40px; border-radius: 16px; max-width: 480px; margin: auto;">
+          <h1 style="background: linear-gradient(to right, #34d399, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; margin-bottom: 8px;">HostelSplit</h1>
+          <p style="color: #9ca3af; margin-bottom: 32px;">Email Verification</p>
+          <div style="background-color: #1a1a1a; border: 1px solid #2d2d2d; border-radius: 12px; padding: 32px; text-align: center;">
+            <p style="color: #d1d5db; margin-bottom: 16px;">Your One-Time Password is:</p>
+            <div style="font-size: 40px; font-weight: bold; letter-spacing: 12px; color: #34d399; margin: 16px 0;">${otpCode}</div>
+            <p style="color: #6b7280; font-size: 13px;">This OTP is valid for <strong style="color: #9ca3af;">10 minutes</strong>. Do not share it with anyone.</p>
+          </div>
+          <p style="color: #4b5563; font-size: 12px; margin-top: 24px; text-align: center;">If you didn't request this, please ignore this email.</p>
+        </div>
+      `
+    });
 
-    await transporter.sendMail(mailOptions);
     res.status(200).json({ message: 'OTP sent successfully' });
   } catch (error) {
     console.error('Send OTP Error:', error);

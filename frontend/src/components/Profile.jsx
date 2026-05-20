@@ -106,6 +106,7 @@ const Profile = () => {
               <input 
                 type="password" 
                 placeholder="••••••••"
+                autoComplete="new-password"
                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
                 value={password} onChange={e => setPassword(e.target.value)} 
                 disabled={showOtpField}

@@ -13,7 +13,7 @@ const PayNowButton = ({ payeeName, payeeUpiId, amount, payeeId, onPaymentComplet
 
       // 1. Open the UPI deep link (works on mobile with UPI apps installed)
       const upiUrl = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Hostel_Settlement`;
-      window.open(upiUrl, '_blank');
+      window.location.href = upiUrl;
 
       // 2. Mark as paid in the backend immediately
       await axios.post('/api/dashboard/pay', { payeeId, amount });

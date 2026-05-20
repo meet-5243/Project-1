@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Target, TrendingUp, AlertTriangle, ShieldCheck, X } from 'lucide-react';
+import { Target, TrendingUp, AlertTriangle, ShieldCheck, X, Pencil } from 'lucide-react';
 
 const BudgetTracker = ({ open, onClose }) => {
   const [budgetStatus, setBudgetStatus] = useState(null);
@@ -153,6 +153,14 @@ const BudgetTracker = ({ open, onClose }) => {
                   <span className="text-3xl font-black text-white">&#8377;{totalSpent.toFixed(0)}</span>
                   <span className="text-[10px] text-zinc-400 uppercase tracking-widest mt-1">Spent</span>
                 </div>
+                {/* Pencil edit icon - bottom-right of circle */}
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="absolute -bottom-1 -right-1 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-full p-2 transition-colors shadow-lg z-10"
+                  title="Edit budget"
+                >
+                  <Pencil size={13} className="text-emerald-400" />
+                </button>
               </div>
             </div>
 
@@ -189,16 +197,7 @@ const BudgetTracker = ({ open, onClose }) => {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Sticky edit button - always visible */}
-          <div className="px-4 pt-3 pb-4 border-t border-white/5 bg-[#111214]">
-            <button 
-              onClick={() => setShowModal(true)}
-              className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold py-4 rounded-2xl border border-emerald-500/30 transition-colors text-base tracking-wide"
-            >
-              ✎ Edit Budget Limit
-            </button>
           </div>
         </>
       );

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserCircle, Save } from 'lucide-react';
 
 const Profile = () => {
   const { user, updateProfile, sendOtp } = useAuth();
+  const navigate = useNavigate();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -43,10 +44,7 @@ const Profile = () => {
       }
       
       await updateProfile(updateData);
-      setMessage('Profile updated successfully!');
-      setPassword(''); // clear password field after successful update
-      setShowOtpField(false);
-      setOtp('');
+      navigate('/', { state: { message: 'Profile updated successfully!' } });
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update profile');
     }

@@ -4,6 +4,7 @@ import PayNowButton from './PayNowButton';
 import { useAuth } from '../context/AuthContext';
 import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
 
 const InsightsDrawer = ({ insights, open, onClose }) => {
   const [selectedGroupId, setSelectedGroupId] = useState(null);
@@ -130,6 +131,7 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [toastMsg, setToastMsg] = useState('');
 
   const fetchBalances = async () => {
     try { const res = await axios.get('/api/dashboard'); setBalances(res.data); }
@@ -139,7 +141,21 @@ const Dashboard = () => {
     try { const res = await axios.get('/api/dashboard/insights'); setInsights(res.data); }
     catch (error) { console.error(error); }
   };
-  useEffect(() => { fetchBalances(); fetchInsights(); }, []);
+  
+  useEffect(() => { 
+    fetchBalances(); 
+    fetchInsights(); 
+    
+    // Check for success messages from redirects (e.g., profile update)
+    if (location.state?.message) {
+      setToastMsg(location.state.message);
+      // Clear the state so it doesn't show again on refresh
+      window.history.replaceState({}, document.title);
+      // Auto-hide toast after 3 seconds
+      setTimeout(() => setToastMsg(''), 3000);
+    }
+  }, [location]);
+
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const totalOwe  = balances.filter(b => !b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);
@@ -155,6 +171,16 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans pb-20 md:pb-0">
+
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
+          <div className="bg-emerald-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-[0_4px_20px_rgba(16,185,129,0.3)] flex items-center gap-2 text-sm font-semibold border border-emerald-400/30">
+            <CheckCircle2 size={16} />
+            {toastMsg}
+          </div>
+        </div>
+      )}
 
       {/* Settle Balance Modal */}
       {showSettleModal && (

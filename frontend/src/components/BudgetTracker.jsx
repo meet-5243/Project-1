@@ -191,8 +191,8 @@ const BudgetTracker = ({ open, onClose }) => {
             </div>
           </div>
 
-          {/* Sticky edit button - always visible */}
-          <div className="px-4 pt-3 pb-6 border-t border-white/5 bg-[#111214]">
+          {/* Sticky edit button - always visible above mobile nav */}
+          <div className="px-4 pt-3 pb-24 border-t border-white/5 bg-[#111214]">
             <button 
               onClick={() => setShowModal(true)}
               className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold py-4 rounded-2xl border border-emerald-500/30 transition-colors text-base tracking-wide"

@@ -122,83 +122,87 @@ const BudgetTracker = ({ open, onClose }) => {
       const strokeDashoffset = circumference - (Math.min(percentageUsed, 100) / 100) * circumference;
 
       content = (
-        <div className="flex flex-col h-full overflow-y-auto px-4 pb-8">
-          {/* Circular Progress */}
-          <div className="flex justify-center items-center py-8 relative">
-            <div className={`absolute inset-0 rounded-full blur-3xl opacity-20 ${bgColor} w-48 h-48 mx-auto top-4`}></div>
-            <div className="relative w-48 h-48 flex items-center justify-center">
-              <svg height="192" width="192" className="absolute -rotate-90">
-                <circle
-                  stroke="rgba(255,255,255,0.05)"
-                  fill="transparent"
-                  strokeWidth={stroke}
-                  r={normalizedRadius}
-                  cx="96"
-                  cy="96"
-                />
-                <circle
-                  stroke={strokeColor}
-                  fill="transparent"
-                  strokeWidth={stroke}
-                  strokeDasharray={circumference + ' ' + circumference}
-                  style={{ strokeDashoffset, transition: 'stroke-dashoffset 1s ease-out' }}
-                  strokeLinecap="round"
-                  r={normalizedRadius}
-                  cx="96"
-                  cy="96"
-                />
-              </svg>
-              <div className="text-center absolute flex flex-col items-center justify-center">
-                <span className="text-3xl font-black text-white">&#8377;{totalSpent.toFixed(0)}</span>
-                <span className="text-[10px] text-zinc-400 uppercase tracking-widest mt-1">Spent</span>
+        <>
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            {/* Circular Progress */}
+            <div className="flex justify-center items-center py-6 relative">
+              <div className={`absolute inset-0 rounded-full blur-3xl opacity-20 ${bgColor} w-48 h-48 mx-auto top-4`}></div>
+              <div className="relative w-44 h-44 flex items-center justify-center">
+                <svg height="176" width="176" className="absolute -rotate-90">
+                  <circle
+                    stroke="rgba(255,255,255,0.05)"
+                    fill="transparent"
+                    strokeWidth={stroke}
+                    r={normalizedRadius - 8}
+                    cx="88"
+                    cy="88"
+                  />
+                  <circle
+                    stroke={strokeColor}
+                    fill="transparent"
+                    strokeWidth={stroke}
+                    strokeDasharray={circumference + ' ' + circumference}
+                    style={{ strokeDashoffset, transition: 'stroke-dashoffset 1s ease-out' }}
+                    strokeLinecap="round"
+                    r={normalizedRadius - 8}
+                    cx="88"
+                    cy="88"
+                  />
+                </svg>
+                <div className="text-center absolute flex flex-col items-center justify-center">
+                  <span className="text-3xl font-black text-white">&#8377;{totalSpent.toFixed(0)}</span>
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-widest mt-1">Spent</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-zinc-900/50 rounded-3xl p-4 border border-white/5 mb-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-semibold text-gray-400">Total Limit</span>
+                <span className="text-base font-bold text-white">&#8377;{totalBudget}</span>
+              </div>
+              <div className="w-full h-[1px] bg-white/5 mb-3"></div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-semibold text-gray-400">Percentage Used</span>
+                <span className="text-base font-bold" style={{ color: strokeColor }}>{percentageUsed.toFixed(1)}%</span>
+              </div>
+            </div>
+
+            {/* Bottom Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex flex-col items-center text-center gap-2">
+                <div className={`p-2 rounded-xl ${bgColor}`}>
+                  {icon}
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold mb-1">Remaining</p>
+                  <p className="text-lg font-bold" style={{ color: strokeColor }}>&#8377;{remainingBudget.toFixed(0)}</p>
+                </div>
+              </div>
+              <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex flex-col items-center text-center gap-2">
+                <div className="p-2 rounded-xl bg-blue-500/20">
+                  <TrendingUp size={24} className="text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold mb-1">Safe to spend</p>
+                  <p className="text-lg font-bold text-blue-400">&#8377;{dailySafeSpend} <span className="text-xs text-blue-400/70 font-normal">/ day</span></p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-zinc-900/50 rounded-3xl p-5 border border-white/5 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-sm font-semibold text-gray-400">Total Limit</span>
-              <span className="text-base font-bold text-white">&#8377;{totalBudget}</span>
-            </div>
-            <div className="w-full h-[1px] bg-white/5 mb-4"></div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-gray-400">Percentage Used</span>
-              <span className="text-base font-bold text-white" style={{ color: strokeColor }}>{percentageUsed.toFixed(1)}%</span>
-            </div>
+          {/* Sticky edit button - always visible */}
+          <div className="px-4 pt-3 pb-6 border-t border-white/5 bg-[#111214]">
+            <button 
+              onClick={() => setShowModal(true)}
+              className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold py-4 rounded-2xl border border-emerald-500/30 transition-colors text-base tracking-wide"
+            >
+              ✎ Edit Budget Limit
+            </button>
           </div>
-
-          {/* Bottom Stats */}
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex flex-col items-center text-center gap-2">
-              <div className={`p-2 rounded-xl ${bgColor}`}>
-                {icon}
-              </div>
-              <div>
-                <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold mb-1">Remaining</p>
-                <p className="text-lg font-bold" style={{ color: strokeColor }}>&#8377;{remainingBudget.toFixed(0)}</p>
-              </div>
-            </div>
-            <div className="bg-black/30 rounded-2xl p-4 border border-white/5 flex flex-col items-center text-center gap-2">
-              <div className="p-2 rounded-xl bg-blue-500/20">
-                <TrendingUp size={24} className="text-blue-400" />
-              </div>
-              <div>
-                <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold mb-1">Safe to spend</p>
-                <p className="text-lg font-bold text-blue-400">&#8377;{dailySafeSpend} <span className="text-xs text-blue-400/70 font-normal">/ day</span></p>
-              </div>
-            </div>
-          </div>
-
-          <button 
-            onClick={() => setShowModal(true)}
-            className="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-4 rounded-2xl border border-white/10 transition-colors mt-auto"
-          >
-            Edit Budget Limit
-          </button>
-        </div>
+        </>
       );
     }
-  }
 
   return (
     <>

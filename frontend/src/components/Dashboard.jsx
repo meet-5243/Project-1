@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import PayNowButton from './PayNowButton';
+import BudgetTracker from './BudgetTracker';
 import { useAuth } from '../context/AuthContext';
-import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard } from 'lucide-react';
+import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -127,6 +128,7 @@ const Dashboard = () => {
   const [balances, setBalances]         = useState([]);
   const [insights, setInsights]         = useState([]);
   const [insightsOpen, setInsightsOpen] = useState(false);
+  const [budgetOpen, setBudgetOpen] = useState(false);
   const [showSettleModal, setShowSettleModal] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -165,6 +167,14 @@ const Dashboard = () => {
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Home' },
     { path: '/analytics', icon: BarChart2, label: 'Analytics' },
+    { path: '/groups', icon: Users, label: 'Groups' },
+    { path: '/profile', icon: UserCircle2, label: 'Profile' },
+  ];
+
+  const mobileNavItems = [
+    { path: '/', icon: LayoutDashboard, label: 'Home' },
+    { path: '/analytics', icon: BarChart2, label: 'Analytics' },
+    { action: () => setBudgetOpen(true), icon: Target, label: 'Budget', color: 'text-emerald-400' },
     { path: '/groups', icon: Users, label: 'Groups' },
     { path: '/profile', icon: UserCircle2, label: 'Profile' },
   ];
@@ -226,6 +236,7 @@ const Dashboard = () => {
       )}
 
       <InsightsDrawer insights={insights} open={insightsOpen} onClose={() => setInsightsOpen(false)} />
+      <BudgetTracker open={budgetOpen} onClose={() => setBudgetOpen(false)} />
 
       {/* Header */}
       <header className="flex justify-between items-center glass-panel p-4 rounded-2xl mx-4 mt-4 mb-6 md:mx-8 md:mt-8">
@@ -242,6 +253,7 @@ const Dashboard = () => {
         <div className="hidden md:flex gap-4">
           <Link to="/profile" className="p-2 hover:bg-white/10 rounded-full transition" title="Profile"><UserCircle2 size={20} /></Link>
           <Link to="/analytics" className="p-2 hover:bg-white/10 rounded-full transition text-emerald-400" title="Analytics"><BarChart2 size={20} /></Link>
+          <button onClick={() => setBudgetOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition text-emerald-400" title="Monthly Budget"><Target size={20} /></button>
           <button onClick={() => setInsightsOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition" style={{ color:'#f472b6' }} title="Where My Money Goes"><HandCoins size={20} /></button>
           <Link to="/groups" className="p-2 hover:bg-white/10 rounded-full transition" title="Groups"><Users size={20} /></Link>
           <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full text-red-400 transition" title="Logout"><LogOut size={20} /></button>
@@ -342,12 +354,21 @@ const Dashboard = () => {
       {/* Bottom Nav - mobile only */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-900 border-t border-zinc-800 h-16">
         <div className="flex justify-around items-center h-full px-2">
-          {navItems.map(({ path, icon: Icon, label }) => {
-            const isActive = location.pathname === path;
+          {mobileNavItems.map((item) => {
+            const Icon = item.icon;
+            if (item.action) {
+              return (
+                <button key={item.label} onClick={item.action} className={`flex flex-col items-center gap-0.5 transition-colors ${item.color || 'text-gray-500 hover:text-gray-300'}`}>
+                  <Icon size={22} />
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </button>
+              );
+            }
+            const isActive = location.pathname === item.path;
             return (
-              <Link key={path} to={path} className={`flex flex-col items-center gap-0.5 transition-colors ${isActive ? 'text-emerald-400' : 'text-gray-500 hover:text-gray-300'}`}>
+              <Link key={item.path} to={item.path} className={`flex flex-col items-center gap-0.5 transition-colors ${isActive ? 'text-emerald-400' : 'text-gray-500 hover:text-gray-300'}`}>
                 <Icon size={22} />
-                <span className="text-[10px] font-medium">{label}</span>
+                <span className="text-[10px] font-medium">{item.label}</span>
               </Link>
             );
           })}

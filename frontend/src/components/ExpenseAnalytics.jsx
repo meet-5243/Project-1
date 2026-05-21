@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BarChart2, TrendingUp, Calendar, Zap, IndianRupee } from 'lucide-react';
+import HomeButton from './HomeButton';
 
 // ────────────────────────────────────────────────────────────
 // Colour palette — consistent with the emerald/cyan brand
@@ -481,6 +482,7 @@ const ExpenseAnalytics = () => {
       <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: '#374151' }}>
         Showing your personal share of all group expenses
       </p>
+      <HomeButton />
     </div>
   );
 };

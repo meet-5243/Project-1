@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Check, X, Plus, Users, ArrowLeft, Trash2, Crown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import HomeButton from './HomeButton';
 
 const Groups = () => {
   const { user } = useAuth();
@@ -200,6 +201,7 @@ const Groups = () => {
           ))}
         </div>
       </div>
+      <HomeButton />
     </div>
   );
 };

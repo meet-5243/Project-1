@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, UserPlus, Receipt, Users, PlusCircle, ChevronDown, ChevronUp, Trophy, TrendingUp, BarChart2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import HomeButton from './HomeButton';
 
 const GroupDetails = () => {
   const { id } = useParams();
@@ -660,6 +661,7 @@ const GroupDetails = () => {
           </div>
         </div>
       </div>
+      <HomeButton />
     </div>
   );
 };

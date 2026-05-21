@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserCircle, Save } from 'lucide-react';
+import HomeButton from './HomeButton';
 
 const Profile = () => {
   const { user, updateProfile, sendOtp } = useAuth();
@@ -138,6 +139,7 @@ const Profile = () => {
           </form>
         </div>
       </div>
+      <HomeButton />
     </div>
   );
 };

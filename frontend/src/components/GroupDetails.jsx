@@ -197,12 +197,22 @@ const GroupDetails = () => {
   };
 
   const handlePayment = (payeeUpiId, payeeName, amount) => {
-    // window.open preserves Chrome's user-gesture context, which is required
-    // for the UPI intent to resolve to installed apps (GPay, PhonePe, etc.)
-    // instead of falling back to the Play Store.
     const formattedAmount = Number(amount).toFixed(2);
-    const upiLink = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
-    window.open(upiLink, '_blank');
+    const queryParams = `pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
+
+    // CORRECTED INTENT ROUTING FOR GPAY INDIA
+    const gpayAndroidIntent = `intent://pay?${queryParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
+
+    // Generic universal link fallback
+    const universalUpiLink = `upi://pay?${queryParams}&mode=02&orgid=000000`;
+
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    if (isAndroid) {
+      window.location.href = gpayAndroidIntent;
+    } else {
+      window.open(universalUpiLink, '_blank');
+    }
   };
 
   const handleMarkAsPaid = async (expenseId, userId, method) => {

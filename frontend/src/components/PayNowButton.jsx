@@ -11,16 +11,10 @@ const PayNowButton = ({ payeeName, payeeUpiId, amount, payeeId, onPaymentComplet
     try {
       setLoading(true);
 
-      // 1. Build minimal valid UPI deep link and trigger via anchor click
-      // (anchor click resolves correctly as an Android intent; window.location.href
-      //  can fall back to Play Store on some Chrome versions)
+      // window.open preserves Chrome's user-gesture context for UPI intent resolution
       const formattedAmount = Number(amount).toFixed(2);
-      const upiLink = `upi://pay?pa=${encodeURIComponent(payeeUpiId)}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
-      const anchor = document.createElement('a');
-      anchor.href = upiLink;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
+      const upiLink = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
+      window.open(upiLink, '_blank');
 
       // 2. Mark as paid in the backend immediately
       await axios.post('/api/dashboard/pay', { payeeId, amount });

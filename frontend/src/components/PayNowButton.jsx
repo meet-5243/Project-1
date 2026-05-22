@@ -11,10 +11,10 @@ const PayNowButton = ({ payeeName, payeeUpiId, amount, payeeId, onPaymentComplet
     try {
       setLoading(true);
 
-      // window.open preserves Chrome's user-gesture context for UPI intent resolution
       const formattedAmount = Number(amount).toFixed(2);
-      const upiLink = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
-      window.open(upiLink, '_blank');
+      const queryParams = `pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
+      const universalUpiLink = `upi://pay?${queryParams}&mode=02&orgid=000000`;
+      window.location.href = universalUpiLink;
 
       // 2. Mark as paid in the backend immediately
       await axios.post('/api/dashboard/pay', { payeeId, amount });

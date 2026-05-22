@@ -199,20 +199,8 @@ const GroupDetails = () => {
   const handlePayment = (payeeUpiId, payeeName, amount) => {
     const formattedAmount = Number(amount).toFixed(2);
     const queryParams = `pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
-
-    // CORRECTED INTENT ROUTING FOR GPAY INDIA
-    const gpayAndroidIntent = `intent://pay?${queryParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
-
-    // Generic universal link fallback
     const universalUpiLink = `upi://pay?${queryParams}&mode=02&orgid=000000`;
-
-    const isAndroid = /Android/i.test(navigator.userAgent);
-
-    if (isAndroid) {
-      window.location.href = gpayAndroidIntent;
-    } else {
-      window.open(universalUpiLink, '_blank');
-    }
+    window.location.href = universalUpiLink;
   };
 
   const handleMarkAsPaid = async (expenseId, userId, method) => {

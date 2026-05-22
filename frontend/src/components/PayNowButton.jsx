@@ -11,10 +11,9 @@ const PayNowButton = ({ payeeName, payeeUpiId, amount, payeeId, onPaymentComplet
     try {
       setLoading(true);
 
-      const formattedAmount = Number(amount).toFixed(2);
-      const queryParams = `pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
-      const universalUpiLink = `upi://pay?${queryParams}&mode=02&orgid=000000`;
-      window.location.href = universalUpiLink;
+      // 1. Open the UPI deep link (works on mobile with UPI apps installed)
+      const upiUrl = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Hostel_Settlement`;
+      window.location.href = upiUrl;
 
       // 2. Mark as paid in the backend immediately
       await axios.post('/api/dashboard/pay', { payeeId, amount });

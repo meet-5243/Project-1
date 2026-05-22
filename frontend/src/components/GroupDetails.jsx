@@ -196,13 +196,6 @@ const GroupDetails = () => {
     setSplits(newSplits);
   };
 
-  const handlePayment = (payeeUpiId, payeeName, amount) => {
-    const formattedAmount = Number(amount).toFixed(2);
-    const queryParams = `pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
-    const universalUpiLink = `upi://pay?${queryParams}&mode=02&orgid=000000`;
-    window.location.href = universalUpiLink;
-  };
-
   const handleMarkAsPaid = async (expenseId, userId, method) => {
     try {
       await axios.post(`/api/expenses/${expenseId}/pay/${userId}`, { method });
@@ -336,7 +329,8 @@ const GroupDetails = () => {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          handlePayment(expense.creatorId.upiId, expense.creatorId.name, m.amountOwed);
+                          const upiLink = `upi://pay?pa=${expense.creatorId.upiId}&pn=${expense.creatorId.name}&am=${m.amountOwed}&cu=INR`;
+                          window.open(upiLink, '_blank');
                           handleMarkAsPaid(expense._id, m.userId._id, 'ONLINE');
                         }}
                         className="text-[10px] font-bold bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded-lg transition"

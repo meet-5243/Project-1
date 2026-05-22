@@ -79,22 +79,14 @@ router.post('/send-otp', async (req, res) => {
 
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password, upiId, qrCodeUrl, otp } = req.body;
+    const { name, email, password, upiId, qrCodeUrl } = req.body;
     
-    if (!otp) return res.status(400).json({ error: 'OTP is required' });
-
-    const otpRecord = await OTP.findOne({ email });
-    if (!otpRecord) return res.status(400).json({ error: 'OTP expired or not requested' });
-    if (otpRecord.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
-
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ error: 'Email already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ name, email, password: hashedPassword, upiId, qrCodeUrl });
     await user.save();
-
-    await OTP.deleteMany({ email }); // Clear OTP after successful registration
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
     res.status(201).json({ token, user: { _id: user._id, name: user.name, email: user.email, upiId: user.upiId } });
@@ -131,7 +123,7 @@ router.get('/me', authenticate, async (req, res) => {
 
 router.put('/me', authenticate, async (req, res) => {
   try {
-    const { name, email, password, upiId, otp } = req.body;
+    const { name, email, password, upiId } = req.body;
     
     // Check if email is being changed and if it already exists
     if (email) {
@@ -145,15 +137,7 @@ router.put('/me', authenticate, async (req, res) => {
     if (upiId !== undefined) updateData.upiId = upiId;
     
     if (password) {
-      const currentUser = await User.findById(req.userId);
-      if (!otp) return res.status(400).json({ error: 'OTP is required to change password' });
-
-      const otpRecord = await OTP.findOne({ email: currentUser.email });
-      if (!otpRecord) return res.status(400).json({ error: 'OTP expired or not requested' });
-      if (otpRecord.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
-
       updateData.password = await bcrypt.hash(password, 10);
-      await OTP.deleteMany({ email: currentUser.email }); // Clear OTP
     }
 
     const updatedUser = await User.findByIdAndUpdate(req.userId, updateData, { new: true }).select('-password');

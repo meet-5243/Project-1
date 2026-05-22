@@ -158,7 +158,13 @@ const Dashboard = () => {
     }
   }, [location]);
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = () => {
+    const confirmLogout = window.confirm("Are you sure you want to logout?");
+    if (!confirmLogout) return;
+    logout();
+    alert("Logout successfully");
+    navigate('/login');
+  };
 
   const totalOwe  = balances.filter(b => !b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);
   const totalOwed = balances.filter(b =>  b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);

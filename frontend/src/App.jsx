@@ -8,15 +8,13 @@ import Profile from './components/Profile';
 import ExpenseAnalytics from './components/ExpenseAnalytics';
 
 const AuthScreen = () => {
-  const { login, signup, sendOtp } = useAuth();
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [upiId, setUpiId] = useState('');
-  const [showOtpField, setShowOtpField] = useState(false);
-  const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -27,14 +25,8 @@ const AuthScreen = () => {
         await login(email, password);
         navigate('/'); // Redirect to dashboard on success
       } else {
-        if (!showOtpField) {
-          await sendOtp(email);
-          setShowOtpField(true);
-          alert('OTP sent to your email. Please check your inbox.');
-        } else {
-          await signup({ name, email, password, upiId, otp });
-          navigate('/'); // Redirect to dashboard on success
-        }
+        await signup({ name, email, password, upiId });
+        navigate('/'); // Redirect to dashboard on success
       }
     } catch (err) {
       alert(err.response?.data?.error || (isLogin ? 'Login failed' : 'Signup failed'));
@@ -45,68 +37,46 @@ const AuthScreen = () => {
 
   const resetForm = () => {
     setIsLogin(!isLogin);
-    setShowOtpField(false);
-    setOtp('');
   };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center p-4">
       <div className="glass-panel p-8 rounded-3xl w-full max-w-md">
         <h2 className="text-3xl font-bold mb-2 text-center bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">HostelSplit</h2>
-        <p className="text-center text-gray-400 mb-6">{isLogin ? 'Welcome back!' : (showOtpField ? 'Verify your email' : 'Create your account')}</p>
+        <p className="text-center text-gray-400 mb-6">{isLogin ? 'Welcome back!' : 'Create your account'}</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {!isLogin && showOtpField ? (
-            <>
-              <p className="text-sm text-center text-emerald-400 mb-2">OTP sent to {email}</p>
+          <>
+            {!isLogin && (
               <input
                 type="text"
-                placeholder="Enter 6-digit OTP"
-                className="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition text-center tracking-widest text-lg"
-                value={otp} onChange={e => setOtp(e.target.value)} required
-                maxLength={6}
-              />
-              <button 
-                type="button" 
-                onClick={() => setShowOtpField(false)}
-                className="text-sm text-gray-400 hover:text-white mt-1"
-              >
-                Change email or resend OTP
-              </button>
-            </>
-          ) : (
-            <>
-              {!isLogin && (
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  className="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
-                  value={name} onChange={e => setName(e.target.value)} required
-                />
-              )}
-              <input
-                type="email"
-                placeholder="Email"
+                placeholder="Full Name"
                 className="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
-                value={email} onChange={e => setEmail(e.target.value)} required
+                value={name} onChange={e => setName(e.target.value)} required
               />
+            )}
+            <input
+              type="email"
+              placeholder="Email"
+              className="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
+              value={email} onChange={e => setEmail(e.target.value)} required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              className="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
+              value={password} onChange={e => setPassword(e.target.value)} required
+            />
+            {!isLogin && (
               <input
-                type="password"
-                placeholder="Password"
+                type="text"
+                placeholder="UPI ID (optional, e.g. name@oksbi)"
                 className="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
-                value={password} onChange={e => setPassword(e.target.value)} required
+                value={upiId} onChange={e => setUpiId(e.target.value)}
               />
-              {!isLogin && (
-                <input
-                  type="text"
-                  placeholder="UPI ID (optional, e.g. name@oksbi)"
-                  className="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
-                  value={upiId} onChange={e => setUpiId(e.target.value)}
-                />
-              )}
-            </>
-          )}
+            )}
+          </>
           <button type="submit" disabled={isLoading} className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition mt-2">
-            {isLoading ? 'Processing...' : (isLogin ? 'Login' : (showOtpField ? 'Verify & Sign Up' : 'Sign Up'))}
+            {isLoading ? 'Processing...' : (isLogin ? 'Login' : 'Sign Up')}
           </button>
         </form>
         <p className="text-center text-sm text-gray-400 mt-6">

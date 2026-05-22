@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, UserPlus, Receipt, Users, PlusCircle, ChevronDown, ChevronUp, Trophy, TrendingUp, BarChart2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, Receipt, Users, PlusCircle, ChevronDown, ChevronUp, Trophy, TrendingUp, BarChart2, Edit2, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import HomeButton from './HomeButton';
 
@@ -14,6 +14,8 @@ const GroupDetails = () => {
   
   // Expense Form State
   const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDesc, setExpenseDesc] = useState('');
   const [payerId, setPayerId] = useState('');
@@ -103,34 +105,93 @@ const GroupDetails = () => {
         }
       }
 
-      await axios.post('/api/expenses', {
-        groupId: id,
-        amount: totalAmount,
-        description: expenseDesc,
-        involvedMembers,
-        payerId
-      });
+      setIsSubmitting(true);
+
+      if (editingExpense) {
+        await axios.put(`/api/expenses/${editingExpense._id}`, {
+          amount: totalAmount,
+          description: expenseDesc,
+          involvedMembers,
+          payerId
+        });
+        alert("Expense updated successfully!");
+      } else {
+        await axios.post('/api/expenses', {
+          groupId: id,
+          amount: totalAmount,
+          description: expenseDesc,
+          involvedMembers,
+          payerId
+        });
+      }
 
       setShowExpenseForm(false);
+      setEditingExpense(null);
       setExpenseAmount('');
       setExpenseDesc('');
       setSplits({});
       fetchExpenses();
     } catch (error) {
-      alert(error.response?.data?.error || 'Failed to add expense');
+      alert(error.response?.data?.error || 'Failed to save expense');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleToggleExpenseForm = () => {
     const nextShow = !showExpenseForm;
     setShowExpenseForm(nextShow);
-    if (nextShow && group) {
-      // Pre-select all members of the group by default
-      const defaultSplits = {};
-      group.members.forEach(m => {
-        defaultSplits[m._id] = '';
-      });
-      setSplits(defaultSplits);
+    if (nextShow) {
+      if (editingExpense) {
+        setEditingExpense(null);
+        setExpenseAmount('');
+        setExpenseDesc('');
+        setPayerId(user?._id || '');
+        setSplits({});
+      } else if (group) {
+        // Pre-select all members of the group by default
+        const defaultSplits = {};
+        group.members.forEach(m => {
+          defaultSplits[m._id] = '';
+        });
+        setSplits(defaultSplits);
+        if (user) setPayerId(user._id);
+      }
+    } else {
+      setEditingExpense(null);
+      setExpenseAmount('');
+      setExpenseDesc('');
+      setSplits({});
+    }
+  };
+
+  const handleEditClick = (expense) => {
+    setEditingExpense(expense);
+    setExpenseDesc(expense.description);
+    setExpenseAmount(expense.amount.toString());
+    setPayerId(expense.creatorId._id);
+    
+    // Populate splits
+    const initialSplits = {};
+    expense.involvedMembers.forEach(m => {
+      initialSplits[m.userId._id] = m.amountOwed.toString();
+    });
+    setSplits(initialSplits);
+    setShowExpenseForm(true);
+  };
+
+  const handleDeleteClick = async (expense) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete the expense "${expense.description}"? This will fully revert all associated net balances.`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`/api/expenses/${expense._id}`);
+      fetchExpenses();
+      alert("Expense deleted successfully!");
+    } catch (error) {
+      alert(error.response?.data?.error || "Failed to delete expense");
     }
   };
 
@@ -300,6 +361,24 @@ const GroupDetails = () => {
             </div>
             <div className="flex items-center gap-3">
               <p className="font-bold text-emerald-400 text-lg">₹{expense.amount}</p>
+              {!isCompleted && expense.creatorId._id === user?._id && (
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <button 
+                    onClick={() => handleEditClick(expense)}
+                    className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition"
+                    title="Edit Expense"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteClick(expense)}
+                    className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition"
+                    title="Delete Expense"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )}
               <div className="p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-white transition">
                 {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </div>
@@ -493,7 +572,23 @@ const GroupDetails = () => {
 
             {/* Expense Creation Form */}
             {showExpenseForm && (
-              <form onSubmit={handleAddExpense} className="bg-white/5 border border-emerald-500/30 p-4 rounded-2xl mb-6 flex flex-col gap-4">
+              <form 
+                onSubmit={handleAddExpense} 
+                className={`bg-white/5 border ${
+                  editingExpense ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/5' : 'border-emerald-500/30'
+                } p-4 rounded-2xl mb-6 flex flex-col gap-4`}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">
+                    {editingExpense ? 'Edit Expense Details' : 'New Expense Details'}
+                  </h3>
+                  {editingExpense && (
+                    <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-bold">
+                      Editing Mode
+                    </span>
+                  )}
+                </div>
+
                 <input 
                   type="text" 
                   placeholder="What was this for? (e.g. Dinner)" 
@@ -562,9 +657,37 @@ const GroupDetails = () => {
                   </p>
                 </div>
 
-                <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition">
-                  Split & Save Expense
-                </button>
+                <div className="flex gap-3 mt-2">
+                  {editingExpense && (
+                    <button 
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        setShowExpenseForm(false);
+                        setEditingExpense(null);
+                        setExpenseAmount('');
+                        setExpenseDesc('');
+                        setSplits({});
+                      }}
+                      className="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className={`flex-1 font-bold py-3 rounded-xl transition text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+                      editingExpense 
+                        ? 'bg-cyan-500 hover:bg-cyan-600' 
+                        : 'bg-emerald-500 hover:bg-emerald-600'
+                    }`}
+                  >
+                    {isSubmitting 
+                      ? (editingExpense ? 'Updating...' : 'Saving...') 
+                      : (editingExpense ? 'Update Expense' : 'Split & Save Expense')}
+                  </button>
+                </div>
               </form>
             )}
 

@@ -118,4 +118,112 @@ router.post('/:expenseId/pay/:userId', authenticate, async (req, res) => {
   }
 });
 
+// Delete an expense (only creator can delete pending expense)
+router.delete('/:expenseId', authenticate, async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+    const expense = await Expense.findById(expenseId);
+    if (!expense) return res.status(404).json({ error: 'Expense not found' });
+
+    // Verify user is the creator of the expense
+    if (expense.creatorId.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Unauthorized to delete this expense' });
+    }
+
+    // Check if completed (all splits paid)
+    const isCompleted = expense.involvedMembers.every(m => m.paymentStatus !== 'PENDING');
+    if (isCompleted) {
+      return res.status(400).json({ error: 'Cannot delete a completed/settled expense' });
+    }
+
+    // Revert net balances
+    for (const member of expense.involvedMembers) {
+      if (member.userId.toString() !== expense.creatorId.toString()) {
+        // Reverse the original addition: member owes payer -> payer owes member back (refund/revert)
+        await updateNetBalance(member.userId, expense.creatorId, member.amountOwed);
+      }
+    }
+
+    await Expense.findByIdAndDelete(expenseId);
+    res.json({ message: 'Expense deleted and balances reverted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Edit an expense (only creator can edit pending expense)
+router.put('/:expenseId', authenticate, async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+    const { amount, description, involvedMembers, payerId } = req.body;
+
+    const expense = await Expense.findById(expenseId);
+    if (!expense) return res.status(404).json({ error: 'Expense not found' });
+
+    // Verify user is the creator of the expense
+    if (expense.creatorId.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Unauthorized to edit this expense' });
+    }
+
+    // Check if completed
+    const isCompleted = expense.involvedMembers.every(m => m.paymentStatus !== 'PENDING');
+    if (isCompleted) {
+      return res.status(400).json({ error: 'Cannot edit a completed/settled expense' });
+    }
+
+    // Step 1: Revert all old split balances
+    for (const member of expense.involvedMembers) {
+      if (member.userId.toString() !== expense.creatorId.toString()) {
+        await updateNetBalance(member.userId, expense.creatorId, member.amountOwed);
+      }
+    }
+
+    // Step 2: Validate new payer and group members
+    const group = await Group.findById(expense.groupId);
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+
+    const actualPayerId = payerId || req.userId;
+    if (!group.members.includes(actualPayerId)) {
+      return res.status(400).json({ error: 'Payer is not a member of the group' });
+    }
+
+    const allInvolvedUserIds = involvedMembers.map(m => m.userId);
+    for (const uId of allInvolvedUserIds) {
+      if (!group.members.includes(uId)) {
+        return res.status(400).json({ error: `User ${uId} is not a member of the group` });
+      }
+    }
+
+    // Step 3: Process new splits
+    const processedInvolvedMembers = involvedMembers.map(m => {
+      if (String(m.userId) === String(actualPayerId)) {
+        return { ...m, paymentStatus: 'PAID_ONLINE' };
+      }
+      return { ...m, paymentStatus: 'PENDING' };
+    });
+
+    // Step 4: Update and save expense
+    expense.amount = amount;
+    expense.description = description;
+    expense.creatorId = actualPayerId;
+    expense.involvedMembers = processedInvolvedMembers;
+
+    await expense.save();
+
+    // Step 5: Apply new split balances
+    for (const member of involvedMembers) {
+      if (member.userId.toString() !== actualPayerId.toString()) {
+        await updateNetBalance(actualPayerId, member.userId, member.amountOwed);
+      }
+    }
+
+    res.json(expense);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
+

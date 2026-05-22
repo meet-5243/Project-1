@@ -197,13 +197,18 @@ const GroupDetails = () => {
   };
 
   const handlePayment = (payeeUpiId, payeeName, amount) => {
-    // Universal UPI deep link — Android OS shows an app-chooser for ALL
+    // Minimal valid UPI deep link — Android shows an app-chooser for ALL
     // installed UPI apps (GPay, PhonePe, Paytm, etc.).
-    // mode=02 + orgid=000000 satisfy UPI spec validation and prevent
-    // the "add bank account" prompt that appears with bare/malformed URIs.
+    // Triggered via anchor click (not window.location.href) so Chrome
+    // correctly resolves it as a native Android intent without falling
+    // back to the Play Store.
     const formattedAmount = Number(amount).toFixed(2);
-    const upiLink = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}&mode=02&orgid=000000`;
-    window.location.href = upiLink;
+    const upiLink = `upi://pay?pa=${encodeURIComponent(payeeUpiId)}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
+    const anchor = document.createElement('a');
+    anchor.href = upiLink;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
   };
 
   const handleMarkAsPaid = async (expenseId, userId, method) => {

@@ -42,7 +42,8 @@ const AuthScreen = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center p-4">
       <div className="glass-panel p-8 rounded-3xl w-full max-w-md">
-        <h2 className="text-3xl font-bold mb-2 text-center bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">HostelSplit</h2>
+        <h2 className="text-3xl font-bold mb-1 text-center bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">Clear&Sync</h2>
+        <p className="text-xs text-center text-gray-500 mb-4 italic">Sync the expenses. Clear the debts.</p>
         <p className="text-center text-gray-400 mb-6">{isLogin ? 'Welcome back!' : 'Create your account'}</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <>

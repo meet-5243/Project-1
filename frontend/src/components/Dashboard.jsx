@@ -251,7 +251,7 @@ const Dashboard = () => {
             <Wallet className="text-primary" size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">HostelSplit</h1>
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">Clear&Sync</h1>
             <p className="text-xs text-gray-400">Hi, {user?.name}</p>
           </div>
         </div>

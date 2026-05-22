@@ -32,7 +32,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/budget', require('./routes/budget'));
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/hostelsplit';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/clearsync';
 
 mongoose.connect(MONGO_URI)
   .then(() => {

@@ -53,12 +53,12 @@ router.post('/send-otp', async (req, res) => {
     await otpRecord.save();
 
     await transporter.sendMail({
-      from: `"HostelSplit" <${process.env.EMAIL_USER}>`,
+      from: `"Clear&Sync" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: '🔑 Your HostelSplit OTP Code',
+      subject: '🔑 Your Clear&Sync OTP Code',
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #0a0a0a; color: #ffffff; padding: 40px; border-radius: 16px; max-width: 480px; margin: auto;">
-          <h1 style="background: linear-gradient(to right, #34d399, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; margin-bottom: 8px;">HostelSplit</h1>
+          <h1 style="background: linear-gradient(to right, #34d399, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 28px; margin-bottom: 8px;">Clear&Sync</h1>
           <p style="color: #9ca3af; margin-bottom: 32px;">Email Verification</p>
           <div style="background-color: #1a1a1a; border: 1px solid #2d2d2d; border-radius: 12px; padding: 32px; text-align: center;">
             <p style="color: #d1d5db; margin-bottom: 16px;">Your One-Time Password is:</p>

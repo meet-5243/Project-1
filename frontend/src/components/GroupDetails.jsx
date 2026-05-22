@@ -197,22 +197,13 @@ const GroupDetails = () => {
   };
 
   const handlePayment = (payeeUpiId, payeeName, amount) => {
+    // Universal UPI deep link — Android OS shows an app-chooser for ALL
+    // installed UPI apps (GPay, PhonePe, Paytm, etc.).
+    // mode=02 + orgid=000000 satisfy UPI spec validation and prevent
+    // the "add bank account" prompt that appears with bare/malformed URIs.
     const formattedAmount = Number(amount).toFixed(2);
-    const queryParams = `pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
-
-    // Direct Android intent routing to execute Google Pay natives directly
-    const gpayAndroidIntent = `intent://pay?${queryParams}#Intent;scheme=upi;package=com.google.android.apps.nimbus;end`;
-
-    // Generic fallback with routing bypass headers
-    const universalUpiLink = `upi://pay?${queryParams}&mode=02&orgid=000000`;
-
-    const isAndroid = /Android/i.test(navigator.userAgent);
-
-    if (isAndroid) {
-      window.location.href = gpayAndroidIntent;
-    } else {
-      window.location.href = universalUpiLink;
-    }
+    const upiLink = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}&mode=02&orgid=000000`;
+    window.location.href = upiLink;
   };
 
   const handleMarkAsPaid = async (expenseId, userId, method) => {

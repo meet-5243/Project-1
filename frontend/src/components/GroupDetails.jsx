@@ -196,6 +196,25 @@ const GroupDetails = () => {
     setSplits(newSplits);
   };
 
+  const handlePayment = (payeeUpiId, payeeName, amount) => {
+    const formattedAmount = Number(amount).toFixed(2);
+    const queryParams = `pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
+
+    // Direct Android intent routing to execute Google Pay natives directly
+    const gpayAndroidIntent = `intent://pay?${queryParams}#Intent;scheme=upi;package=com.google.android.apps.nimbus;end`;
+
+    // Generic fallback with routing bypass headers
+    const universalUpiLink = `upi://pay?${queryParams}&mode=02&orgid=000000`;
+
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    if (isAndroid) {
+      window.location.href = gpayAndroidIntent;
+    } else {
+      window.location.href = universalUpiLink;
+    }
+  };
+
   const handleMarkAsPaid = async (expenseId, userId, method) => {
     try {
       await axios.post(`/api/expenses/${expenseId}/pay/${userId}`, { method });
@@ -329,8 +348,7 @@ const GroupDetails = () => {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          const upiLink = `upi://pay?pa=${expense.creatorId.upiId}&pn=${expense.creatorId.name}&am=${m.amountOwed}&cu=INR`;
-                          window.open(upiLink, '_blank');
+                          handlePayment(expense.creatorId.upiId, expense.creatorId.name, m.amountOwed);
                           handleMarkAsPaid(expense._id, m.userId._id, 'ONLINE');
                         }}
                         className="text-[10px] font-bold bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded-lg transition"

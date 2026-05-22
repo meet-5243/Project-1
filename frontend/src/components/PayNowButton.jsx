@@ -11,9 +11,18 @@ const PayNowButton = ({ payeeName, payeeUpiId, amount, payeeId, onPaymentComplet
     try {
       setLoading(true);
 
-      // 1. Open the UPI deep link (works on mobile with UPI apps installed)
-      const upiUrl = `upi://pay?pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Hostel_Settlement`;
-      window.location.href = upiUrl;
+      // 1. Build cross-platform UPI deep link and navigate
+      const formattedAmount = Number(amount).toFixed(2);
+      const queryParams = `pa=${payeeUpiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent('HostelSplit Payment')}`;
+
+      // Direct Android intent routing to execute Google Pay natives directly
+      const gpayAndroidIntent = `intent://pay?${queryParams}#Intent;scheme=upi;package=com.google.android.apps.nimbus;end`;
+
+      // Generic fallback with routing bypass headers
+      const universalUpiLink = `upi://pay?${queryParams}&mode=02&orgid=000000`;
+
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      window.location.href = isAndroid ? gpayAndroidIntent : universalUpiLink;
 
       // 2. Mark as paid in the backend immediately
       await axios.post('/api/dashboard/pay', { payeeId, amount });

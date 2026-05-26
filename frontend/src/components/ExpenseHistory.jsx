@@ -105,7 +105,7 @@ const ExpenseHistory = () => {
       (exp.groupId && exp.groupId.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     // 2. Role Filter matching paid by me vs owed by me
-    const isPayer = exp.creatorId._id === user?._id;
+    const isPayer = exp.creatorId && (exp.creatorId._id || exp.creatorId).toString() === user?._id?.toString();
     const matchRole = roleFilter === 'all' || 
       (roleFilter === 'payer' && isPayer) ||
       (roleFilter === 'debtor' && !isPayer);
@@ -114,23 +114,31 @@ const ExpenseHistory = () => {
   });
 
   const getPayerName = (exp) => {
-    return exp.creatorId._id === user?._id ? 'You' : exp.creatorId.name;
+    const isPayer = exp.creatorId && (exp.creatorId._id || exp.creatorId).toString() === user?._id?.toString();
+    return isPayer ? 'You' : (exp.creatorId?.name || 'Unknown');
   };
 
   const getInvolvedText = (exp) => {
-    const isPayer = exp.creatorId._id === user?._id;
+    const isPayer = exp.creatorId && (exp.creatorId._id || exp.creatorId).toString() === user?._id?.toString();
     if (isPayer) {
       const others = exp.involvedMembers
-        .filter(m => m.userId._id !== user?._id)
-        .map(m => m.userId.name);
+        .filter(m => {
+          const mId = m.userId?._id || m.userId;
+          return mId && mId.toString() !== user?._id?.toString();
+        })
+        .map(m => m.userId?.name || 'Unknown');
       return others.length > 0 ? `with ${others.join(', ')}` : 'alone';
     } else {
-      return `Paid by ${exp.creatorId.name}`;
+      return `Paid by ${exp.creatorId?.name || 'Unknown'}`;
     }
   };
 
   const getUserShare = (exp) => {
-    const mySplit = exp.involvedMembers.find(m => m.userId._id === user?._id);
+    if (!user || !user._id) return 0;
+    const mySplit = exp.involvedMembers.find(m => {
+      const mId = m.userId?._id || m.userId;
+      return mId && mId.toString() === user._id.toString();
+    });
     return mySplit ? mySplit.amountOwed : 0;
   };
 
@@ -373,7 +381,7 @@ const ExpenseHistory = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {processedExpenses.map((exp, idx) => {
-              const isPayer = exp.creatorId._id === user?._id;
+              const isPayer = exp.creatorId && (exp.creatorId._id || exp.creatorId).toString() === user?._id?.toString();
               const myShare = getUserShare(exp);
               const totalAmount = exp.amount;
 

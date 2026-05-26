@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, UserPlus, Receipt, Users, PlusCircle, ChevronDown, ChevronUp, Trophy, TrendingUp, BarChart2, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, Receipt, Users, PlusCircle, ChevronDown, ChevronUp, Trophy, TrendingUp, BarChart2, Edit2, Trash2, QrCode } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import HomeButton from './HomeButton';
+import QrPaymentModal from './QrPaymentModal';
 
 const GroupDetails = () => {
   const { id } = useParams();
@@ -22,6 +23,7 @@ const GroupDetails = () => {
   const [splits, setSplits] = useState({}); // { memberId: "amount" }
   const [expandedExpenses, setExpandedExpenses] = useState({});
   const [activeLeftTab, setActiveLeftTab] = useState('members'); // 'members' or 'leaderboards'
+  const [selectedQrExpense, setSelectedQrExpense] = useState(null);
 
   const getLocalDateStringInit = (d) => {
     const year = d.getFullYear();
@@ -408,6 +410,16 @@ const GroupDetails = () => {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
+                          setSelectedQrExpense({ expense, member: m });
+                        }}
+                        className="text-[10px] font-bold bg-rose-500 hover:bg-rose-600 text-white px-2 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <QrCode size={11} />
+                        Pay via QR
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
                           const upiLink = `upi://pay?pa=${expense.creatorId.upiId}&pn=${expense.creatorId.name}&am=${m.amountOwed}&cu=INR`;
                           window.open(upiLink, '_blank');
                           handleMarkAsPaid(expense._id, m.userId._id, 'ONLINE');
@@ -785,6 +797,15 @@ const GroupDetails = () => {
         </div>
       </div>
       <HomeButton />
+
+      <QrPaymentModal
+        isOpen={selectedQrExpense !== null}
+        onClose={() => setSelectedQrExpense(null)}
+        payeeName={selectedQrExpense?.expense?.creatorId?.name || ''}
+        payeeUpiId={selectedQrExpense?.expense?.creatorId?.upiId || ''}
+        amount={selectedQrExpense?.member?.amountOwed || 0}
+        onConfirmPayment={() => handleMarkAsPaid(selectedQrExpense?.expense?._id, selectedQrExpense?.member?.userId?._id, 'ONLINE')}
+      />
     </div>
   );
 };

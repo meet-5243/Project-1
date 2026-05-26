@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import PayNowButton from './PayNowButton';
 import BudgetTracker from './BudgetTracker';
+import QrPaymentModal from './QrPaymentModal';
 import { useAuth } from '../context/AuthContext';
-import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target, History } from 'lucide-react';
+import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target, History, QrCode } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -130,7 +131,13 @@ const Dashboard = () => {
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [showSettleModal, setShowSettleModal] = useState(false);
+  const [selectedQrBalance, setSelectedQrBalance] = useState(null);
   const { user, logout } = useAuth();
+
+  const handleConfirmQrPayment = async (payeeId, amount) => {
+    await axios.post('/api/dashboard/pay', { payeeId, amount });
+    await fetchBalances();
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const [toastMsg, setToastMsg] = useState('');
@@ -228,7 +235,16 @@ const Dashboard = () => {
                       <span className="text-[9px] text-zinc-500 uppercase tracking-wider">You Owe</span>
                     </div>
                     {balance.otherUser.upiId && (
-                      <PayNowButton payeeName={balance.otherUser.name} payeeUpiId={balance.otherUser.upiId} amount={balance.amount} payeeId={balance.otherUser._id} onPaymentComplete={fetchBalances} />
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => setSelectedQrBalance(balance)}
+                          className="flex items-center justify-center p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-full transition-colors cursor-pointer"
+                          title="Show UPI QR Code"
+                        >
+                          <QrCode size={13} />
+                        </button>
+                        <PayNowButton payeeName={balance.otherUser.name} payeeUpiId={balance.otherUser.upiId} amount={balance.amount} payeeId={balance.otherUser._id} onPaymentComplete={fetchBalances} />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -243,6 +259,15 @@ const Dashboard = () => {
 
       <InsightsDrawer insights={insights} open={insightsOpen} onClose={() => setInsightsOpen(false)} />
       <BudgetTracker open={budgetOpen} onClose={() => setBudgetOpen(false)} />
+
+      <QrPaymentModal
+        isOpen={selectedQrBalance !== null}
+        onClose={() => setSelectedQrBalance(null)}
+        payeeName={selectedQrBalance?.otherUser?.name || ''}
+        payeeUpiId={selectedQrBalance?.otherUser?.upiId || ''}
+        amount={selectedQrBalance?.amount || 0}
+        onConfirmPayment={() => handleConfirmQrPayment(selectedQrBalance?.otherUser?._id, selectedQrBalance?.amount)}
+      />
 
       {/* Header */}
       <header className="flex justify-between items-center glass-panel p-4 rounded-2xl mx-4 mt-4 mb-6 md:mx-8 md:mt-8">

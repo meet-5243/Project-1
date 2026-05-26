@@ -3,7 +3,7 @@ import axios from 'axios';
 import PayNowButton from './PayNowButton';
 import BudgetTracker from './BudgetTracker';
 import { useAuth } from '../context/AuthContext';
-import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target } from 'lucide-react';
+import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target, History } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -255,9 +255,9 @@ const Dashboard = () => {
             <p className="text-xs text-gray-400">Hi, {user?.name}</p>
           </div>
         </div>
-        {/* Desktop nav - all icons */}
         <div className="hidden md:flex gap-4">
           <Link to="/profile" className="p-2 hover:bg-white/10 rounded-full transition" title="Profile"><UserCircle2 size={20} /></Link>
+          <Link to="/history" className="p-2 hover:bg-white/10 rounded-full transition text-cyan-400" title="Expense History"><History size={20} /></Link>
           <Link to="/analytics" className="p-2 hover:bg-white/10 rounded-full transition text-emerald-400" title="Analytics"><BarChart2 size={20} /></Link>
           <button onClick={() => setBudgetOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition text-emerald-400" title="Monthly Budget"><Target size={20} /></button>
           <button onClick={() => setInsightsOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition" style={{ color:'#f472b6' }} title="Where My Money Goes"><HandCoins size={20} /></button>
@@ -285,6 +285,34 @@ const Dashboard = () => {
             <p className="text-xs text-gray-400 mb-1">You are Owed</p>
             <p className="text-xl md:text-3xl font-bold text-emerald-400">&#8377;{totalOwed}</p>
           </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <Link to="/history" className="glass-panel p-4 rounded-3xl flex items-center justify-between border border-white/5 hover:border-cyan-500/30 transition duration-300 group">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-cyan-500/10 rounded-2xl group-hover:bg-cyan-500/20 transition text-cyan-400">
+                <History size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-gray-100">Expense History</h3>
+                <p className="text-[11px] text-zinc-500">Track when, where, & with whom you spent</p>
+              </div>
+            </div>
+            <span className="text-cyan-400 text-lg group-hover:translate-x-1 transition-transform">&#8594;</span>
+          </Link>
+          <button onClick={() => setInsightsOpen(true)} className="glass-panel p-4 rounded-3xl flex items-center justify-between border border-white/5 hover:border-pink-500/30 transition duration-300 group text-left w-full">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-pink-500/10 rounded-2xl group-hover:bg-pink-500/20 transition" style={{ color: '#f472b6' }}>
+                <HandCoins size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-gray-100">Where My Money Goes</h3>
+                <p className="text-[11px] text-zinc-500">Lifetime total paid for each member</p>
+              </div>
+            </div>
+            <span className="text-pink-400 text-lg group-hover:translate-x-1 transition-transform" style={{ color: '#f472b6' }}>&#8594;</span>
+          </button>
         </div>
 
         {/* Debt Overview */}

@@ -6,6 +6,7 @@ import Groups from './components/Groups';
 import GroupDetails from './components/GroupDetails';
 import Profile from './components/Profile';
 import ExpenseAnalytics from './components/ExpenseAnalytics';
+import ExpenseHistory from './components/ExpenseHistory';
 
 const AuthScreen = () => {
   const { login, signup } = useAuth();
@@ -112,6 +113,7 @@ function App() {
           <Route path="/groups" element={<PrivateRoute><Groups /></PrivateRoute>} />
           <Route path="/groups/:id" element={<PrivateRoute><GroupDetails /></PrivateRoute>} />
           <Route path="/analytics" element={<PrivateRoute><ExpenseAnalytics /></PrivateRoute>} />
+          <Route path="/history" element={<PrivateRoute><ExpenseHistory /></PrivateRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

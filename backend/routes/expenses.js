@@ -60,6 +60,71 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
+// Get personal expense history with filters
+router.get('/history', authenticate, async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const userId = req.userId;
+    const { filterType, startDate, endDate, groupId } = req.query;
+
+    const userObjId = new mongoose.Types.ObjectId(userId);
+
+    let query = {
+      $or: [
+        { creatorId: userObjId },
+        { 'involvedMembers.userId': userObjId }
+      ]
+    };
+
+    if (groupId) {
+      query.groupId = new mongoose.Types.ObjectId(groupId);
+    }
+
+    if (filterType && filterType !== 'all') {
+      const now = new Date();
+      let start = new Date();
+      let end = new Date();
+
+      if (filterType === 'today') {
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt = { $gte: start, $lte: end };
+      } else if (filterType === 'yesterday') {
+        start.setDate(now.getDate() - 1);
+        start.setHours(0, 0, 0, 0);
+        end.setDate(now.getDate() - 1);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt = { $gte: start, $lte: end };
+      } else if (filterType === 'week') {
+        start.setDate(now.getDate() - 7);
+        start.setHours(0, 0, 0, 0);
+        query.createdAt = { $gte: start };
+      } else if (filterType === 'month') {
+        start.setDate(now.getDate() - 30);
+        start.setHours(0, 0, 0, 0);
+        query.createdAt = { $gte: start };
+      }
+    } else if (startDate && endDate) {
+      const customStart = new Date(startDate);
+      customStart.setHours(0, 0, 0, 0);
+      const customEnd = new Date(endDate);
+      customEnd.setHours(23, 59, 59, 999);
+      query.createdAt = { $gte: customStart, $lte: customEnd };
+    }
+
+    const expenses = await Expense.find(query)
+      .sort({ createdAt: -1 })
+      .populate('groupId', 'name')
+      .populate('creatorId', 'name email')
+      .populate('involvedMembers.userId', 'name email');
+
+    res.json(expenses);
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get expenses for a group (Privacy Enforced)
 router.get('/:groupId', authenticate, async (req, res) => {
   try {

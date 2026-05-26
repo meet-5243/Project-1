@@ -42,14 +42,14 @@ const QrPaymentModal = ({ isOpen, onClose, payeeName, payeeUpiId, amount, onConf
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="relative bg-zinc-900/90 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl shadow-rose-500/5 animate-in zoom-in-95 duration-200"
+        className="relative bg-zinc-900/90 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl shadow-rose-500/5 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Decorative Top Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-12 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
 
         {/* Header */}
-        <div className="p-5 border-b border-zinc-800/80 flex justify-between items-center bg-zinc-950/40">
+        <div className="p-5 border-b border-zinc-800/80 flex justify-between items-center bg-zinc-950/40 shrink-0">
           <div className="flex items-center gap-2">
             <div className="bg-rose-500/15 p-2 rounded-xl text-rose-400">
               <QrCode size={18} />
@@ -68,7 +68,7 @@ const QrPaymentModal = ({ isOpen, onClose, payeeName, payeeUpiId, amount, onConf
         </div>
 
         {/* Content */}
-        <div className="p-6 flex flex-col items-center">
+        <div className="p-6 flex flex-col items-center overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:rounded-full">
           {/* Amount Badge */}
           <div className="text-center mb-5 flex flex-col items-center">
             <span className="text-[10px] uppercase tracking-wider text-rose-400 font-bold bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
@@ -141,7 +141,7 @@ const QrPaymentModal = ({ isOpen, onClose, payeeName, payeeUpiId, amount, onConf
         </div>
 
         {/* Footer Confirmation */}
-        <div className="p-4 bg-zinc-950/40 border-t border-zinc-800/80 flex gap-3">
+        <div className="p-4 bg-zinc-950/40 border-t border-zinc-800/80 flex gap-3 shrink-0">
           <button
             onClick={onClose}
             className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold transition-colors border border-zinc-700/50"

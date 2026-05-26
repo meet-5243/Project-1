@@ -80,7 +80,7 @@ router.get('/history', authenticate, async (req, res) => {
       query.groupId = new mongoose.Types.ObjectId(groupId);
     }
 
-    if (filterType && filterType !== 'all') {
+    if (filterType && filterType !== 'all' && filterType !== 'custom') {
       const now = new Date();
       let start = new Date();
       let end = new Date();
@@ -104,7 +104,7 @@ router.get('/history', authenticate, async (req, res) => {
         start.setHours(0, 0, 0, 0);
         query.createdAt = { $gte: start };
       }
-    } else if (startDate && endDate) {
+    } else if ((filterType === 'custom' || !filterType) && startDate && endDate) {
       const customStart = new Date(startDate);
       customStart.setHours(0, 0, 0, 0);
       const customEnd = new Date(endDate);

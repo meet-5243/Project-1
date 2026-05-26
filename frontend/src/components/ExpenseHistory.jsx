@@ -4,7 +4,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   ArrowLeft, Calendar, Users, SlidersHorizontal, Search, Filter, 
-  ArrowUpRight, ArrowDownLeft, Trash2, ShieldCheck, Clock, X, ChevronDown 
+  ArrowUpRight, ArrowDownLeft, Trash2, ShieldCheck, Clock, X, ChevronDown,
+  Download, FileText
 } from 'lucide-react';
 import HomeButton from './HomeButton';
 
@@ -153,6 +154,190 @@ const ExpenseHistory = () => {
     }
   };
 
+  const exportToCSV = () => {
+    if (processedExpenses.length === 0) return;
+    
+    const headers = ['Date', 'Description', 'Group', 'Payer', 'Total Amount (INR)', 'Your Share (INR)', 'Status'];
+    
+    const rows = processedExpenses.map(exp => {
+      const isPayer = exp.creatorId && (exp.creatorId._id || exp.creatorId).toString() === user?._id?.toString();
+      const myShare = getUserShare(exp);
+      const payerName = getPayerName(exp);
+      const groupName = exp.groupId?.name || 'Personal';
+      const allSplitsPaid = exp.involvedMembers.every(m => m.paymentStatus !== 'PENDING');
+      const status = allSplitsPaid ? 'Fully Settled' : 'Pending Splits';
+      
+      const date = new Date(exp.createdAt).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      
+      const escapedDesc = `"${exp.description.replace(/"/g, '""')}"`;
+      const escapedGroup = `"${groupName.replace(/"/g, '""')}"`;
+      const escapedPayer = `"${payerName.replace(/"/g, '""')}"`;
+      
+      return [
+        date,
+        escapedDesc,
+        escapedGroup,
+        escapedPayer,
+        exp.amount.toFixed(2),
+        myShare.toFixed(2),
+        status
+      ].join(',');
+    });
+    
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `ClearAndSync_Expense_History_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToPDF = () => {
+    if (processedExpenses.length === 0) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    
+    const totalPersonalShare = processedExpenses.reduce((acc, exp) => acc + getUserShare(exp), 0);
+    const totalPayerExpenses = processedExpenses
+      .filter(exp => exp.creatorId && (exp.creatorId._id || exp.creatorId).toString() === user?._id?.toString())
+      .reduce((acc, exp) => acc + exp.amount, 0);
+
+    const tableRows = processedExpenses.map((exp, idx) => {
+      const isPayer = exp.creatorId && (exp.creatorId._id || exp.creatorId).toString() === user?._id?.toString();
+      const myShare = getUserShare(exp);
+      const payerName = getPayerName(exp);
+      const groupName = exp.groupId?.name || 'Personal';
+      const allSplitsPaid = exp.involvedMembers.every(m => m.paymentStatus !== 'PENDING');
+      const status = allSplitsPaid ? 'Fully Settled' : 'Pending Splits';
+      
+      const date = new Date(exp.createdAt).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 10px; font-size: 11px;">${idx + 1}</td>
+          <td style="padding: 10px; font-size: 11px;">${date}</td>
+          <td style="padding: 10px; font-size: 11px; font-weight: bold; color: #1e293b;">${exp.description}</td>
+          <td style="padding: 10px; font-size: 11px; color: #475569;">${groupName}</td>
+          <td style="padding: 10px; font-size: 11px; color: #475569;">${payerName}</td>
+          <td style="padding: 10px; font-size: 11px; text-align: right;">₹${exp.amount.toFixed(2)}</td>
+          <td style="padding: 10px; font-size: 11px; text-align: right; font-weight: bold; color: ${isPayer ? '#0f766e' : '#be123c'};">
+            ₹${myShare.toFixed(2)}
+          </td>
+          <td style="padding: 10px; font-size: 10px; text-align: center;">
+            <span style="padding: 3px 8px; border-radius: 9999px; font-weight: bold; font-size: 9px; ${
+              allSplitsPaid 
+                ? 'background-color: #d1fae5; color: #065f46;' 
+                : 'background-color: #fef3c7; color: #92400e;'
+            }">
+              ${status}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    doc.write(`
+      <html>
+        <head>
+          <title>Clear&Sync Expense Report</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; padding: 40px; margin: 0; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo { font-size: 24px; font-weight: 800; color: #0d9488; }
+            .title { font-size: 16px; font-weight: bold; margin-bottom: 5px; color: #475569; }
+            .subtitle { font-size: 11px; color: #94a3b8; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th { background-color: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: bold; font-size: 11px; text-transform: uppercase; padding: 10px; text-align: left; }
+            .summary-box { display: flex; justify-content: flex-end; gap: 40px; margin-top: 20px; border-top: 2px solid #e2e8f0; padding-top: 20px; }
+            .summary-item { text-align: right; }
+            .summary-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; font-weight: bold; }
+            .summary-value { font-size: 18px; font-weight: 800; color: #0d9488; }
+            .footer { font-size: 10px; color: #94a3b8; text-align: center; margin-top: 50px; border-top: 1px dashed #e2e8f0; padding-top: 15px; }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="logo">Clear&Sync</div>
+              <div class="subtitle">Personal Expense History Statement</div>
+            </div>
+            <div style="text-align: right;">
+              <div class="title">User Statement</div>
+              <div class="subtitle">Generated: ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+              <div class="subtitle">User: ${user?.name || 'Tester'} (${user?.email || ''})</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 5%">#</th>
+                <th style="width: 12%">Date</th>
+                <th style="width: 25%">Description</th>
+                <th style="width: 15%">Group</th>
+                <th style="width: 15%">Payer</th>
+                <th style="width: 12%; text-align: right;">Total Amount</th>
+                <th style="width: 13%; text-align: right;">Your Share</th>
+                <th style="width: 13%; text-align: center;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+
+          <div class="summary-box">
+            <div class="summary-item">
+              <div class="summary-label">Total Outlays (Paid upfront)</div>
+              <div style="font-size: 18px; font-weight: 800; color: #475569;">₹${totalPayerExpenses.toFixed(2)}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Net Personal Share Spent</div>
+              <div class="summary-value">₹${totalPersonalShare.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            Generated automatically via Clear&Sync. Split bills, clear balances, sync lives.
+          </div>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    iframe.contentWindow.focus();
+    setTimeout(() => {
+      iframe.contentWindow.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 500);
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans pb-12 p-4 md:p-8">
       <style>{`
@@ -191,7 +376,7 @@ const ExpenseHistory = () => {
       `}</style>
 
       {/* Header */}
-      <header className="flex justify-between items-center glass-panel p-4 rounded-2xl mb-8 animate-fade-in">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-panel p-4 rounded-2xl mb-8 animate-fade-in">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
@@ -206,9 +391,29 @@ const ExpenseHistory = () => {
             <p className="text-[11px] text-gray-500">Track and filter where you spent your money</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400 bg-cyan-500/10 px-3.5 py-1.5 rounded-full border border-cyan-500/20">
-          <SlidersHorizontal size={14} />
-          <span>Filters Active</span>
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          <button 
+            onClick={exportToCSV}
+            disabled={processedExpenses.length === 0}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed border border-emerald-500/20 rounded-xl text-xs font-bold transition duration-200 cursor-pointer"
+            title="Export filtered records to CSV / Excel"
+          >
+            <Download size={14} />
+            <span>Excel</span>
+          </button>
+          <button 
+            onClick={exportToPDF}
+            disabled={processedExpenses.length === 0}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed border border-cyan-500/20 rounded-xl text-xs font-bold transition duration-200 cursor-pointer"
+            title="Export filtered records to PDF Statement"
+          >
+            <FileText size={14} />
+            <span>PDF</span>
+          </button>
+          <div className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs font-semibold text-cyan-400 bg-cyan-500/10 px-3.5 py-2 rounded-full border border-cyan-500/20 whitespace-nowrap">
+            <SlidersHorizontal size={14} />
+            <span>Filters Active</span>
+          </div>
         </div>
       </header>
 

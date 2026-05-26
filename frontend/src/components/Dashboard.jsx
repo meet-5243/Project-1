@@ -260,13 +260,11 @@ const Dashboard = () => {
           <Link to="/history" className="p-2 hover:bg-white/10 rounded-full transition text-cyan-400" title="Expense History"><History size={20} /></Link>
           <Link to="/analytics" className="p-2 hover:bg-white/10 rounded-full transition text-emerald-400" title="Analytics"><BarChart2 size={20} /></Link>
           <button onClick={() => setBudgetOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition text-emerald-400" title="Monthly Budget"><Target size={20} /></button>
-          <button onClick={() => setInsightsOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition" style={{ color:'#f472b6' }} title="Where My Money Goes"><HandCoins size={20} /></button>
           <Link to="/groups" className="p-2 hover:bg-white/10 rounded-full transition" title="Groups"><Users size={20} /></Link>
           <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full text-red-400 transition" title="Logout"><LogOut size={20} /></button>
         </div>
-        {/* Mobile nav - insights + logout only */}
+        {/* Mobile nav - logout only */}
         <div className="flex md:hidden items-center gap-1">
-          <button onClick={() => setInsightsOpen(true)} className="p-2 hover:bg-white/10 rounded-full transition" style={{ color:'#f472b6' }}><HandCoins size={20} /></button>
           <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full text-red-400 transition"><LogOut size={20} /></button>
         </div>
       </header>

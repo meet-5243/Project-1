@@ -4,7 +4,7 @@ import PayNowButton from './PayNowButton';
 import BudgetTracker from './BudgetTracker';
 import QrPaymentModal from './QrPaymentModal';
 import { useAuth } from '../context/AuthContext';
-import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target, History, QrCode } from 'lucide-react';
+import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target, History, QrCode, Bell, AlertTriangle, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -134,9 +134,21 @@ const Dashboard = () => {
   const [selectedQrBalance, setSelectedQrBalance] = useState(null);
   const { user, logout } = useAuth();
 
+  // Pending settlements states
+  const [pendingSettlements, setPendingSettlements] = useState({ received: [], disputed: [] });
+  const [settlementsExpanded, setSettlementsExpanded] = useState(false);
+  const [dismissedSettlementIds, setDismissedSettlementIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('dismissedSettlements') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
   const handleConfirmQrPayment = async (payeeId, amount) => {
     await axios.post('/api/dashboard/pay', { payeeId, amount });
     await fetchBalances();
+    await fetchPendingSettlements();
   };
   const navigate = useNavigate();
   const location = useLocation();
@@ -150,10 +162,48 @@ const Dashboard = () => {
     try { const res = await axios.get('/api/dashboard/insights'); setInsights(res.data); }
     catch (error) { console.error(error); }
   };
+  const fetchPendingSettlements = async () => {
+    try {
+      const res = await axios.get('/api/dashboard/settlement/pending');
+      setPendingSettlements(res.data);
+    } catch (error) {
+      console.error('Error fetching pending settlements:', error);
+    }
+  };
+
+  const handleDispute = async (settlementId) => {
+    const confirmDispute = window.confirm("Are you sure you want to dispute this payment? This will restore the debt balance immediately.");
+    if (!confirmDispute) return;
+    try {
+      await axios.post('/api/dashboard/settlement/dispute', { settlementId });
+      alert("Payment disputed successfully. Balances have been restored.");
+      fetchBalances();
+      fetchPendingSettlements();
+    } catch (error) {
+      console.error(error);
+      alert("Error disputing payment.");
+    }
+  };
+
+  const handleDismissReceived = (settlementId) => {
+    const updated = [...dismissedSettlementIds, settlementId];
+    setDismissedSettlementIds(updated);
+    localStorage.setItem('dismissedSettlements', JSON.stringify(updated));
+  };
+
+  const handleResolveDisputed = async (settlementId) => {
+    try {
+      await axios.post('/api/dashboard/settlement/resolve', { settlementId });
+      fetchPendingSettlements();
+    } catch (error) {
+      console.error(error);
+    }
+  };
   
   useEffect(() => { 
     fetchBalances(); 
     fetchInsights(); 
+    fetchPendingSettlements();
     
     // Check for success messages from redirects (e.g., profile update)
     if (location.state?.message) {
@@ -176,6 +226,163 @@ const Dashboard = () => {
   const totalOwe  = balances.filter(b => !b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);
   const totalOwed = balances.filter(b =>  b.isOwedToMe).reduce((acc, curr) => acc + curr.amount, 0);
   const oweBalances = balances.filter(b => !b.isOwedToMe);
+
+  const visibleReceived = pendingSettlements.received.filter(s => !dismissedSettlementIds.includes(s._id));
+  const visibleDisputed = pendingSettlements.disputed;
+  const totalAlerts = visibleReceived.length + visibleDisputed.length;
+
+  const renderPaymentReviewCenter = () => {
+    if (totalAlerts === 0) return null;
+
+    // Single item simple banner
+    if (totalAlerts === 1 && !settlementsExpanded) {
+      if (visibleReceived.length === 1) {
+        const s = visibleReceived[0];
+        const timeLeft = Math.max(0, Math.round((new Date(s.disputeExpiresAt) - new Date()) / (1000 * 60 * 60)));
+        return (
+          <div className="glass-panel p-4 rounded-3xl mb-6 border border-amber-500/20 bg-amber-500/5 shadow-[0_0_20px_rgba(245,158,11,0.1)] flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="bg-amber-500/10 p-2.5 rounded-2xl text-amber-400">
+                <Bell size={18} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-semibold text-gray-200">
+                  <span className="text-amber-400 font-bold">{s.payerId?.name}</span> marked <span className="font-bold text-emerald-400">₹{s.amount}</span> as paid.
+                </span>
+                <span className="text-[10px] text-zinc-500">
+                  Auto-settles in {timeLeft}h if not disputed.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                onClick={() => handleDispute(s._id)}
+                className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 text-[11px] font-bold py-1.5 px-4 rounded-xl transition cursor-pointer"
+              >
+                Dispute
+              </button>
+              <button
+                onClick={() => handleDismissReceived(s._id)}
+                className="bg-white/5 hover:bg-white/10 text-zinc-300 text-[11px] font-bold py-1.5 px-4 rounded-xl transition cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        );
+      } else {
+        const s = visibleDisputed[0];
+        return (
+          <div className="glass-panel p-4 rounded-3xl mb-6 border border-rose-500/20 bg-rose-500/5 shadow-[0_0_20px_rgba(244,63,94,0.1)] flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="bg-rose-500/10 p-2.5 rounded-2xl text-rose-400">
+                <AlertTriangle size={18} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-semibold text-gray-200">
+                  <span className="text-rose-400 font-bold">{s.payeeId?.name}</span> disputed your payment of <span className="font-bold text-rose-400">₹{s.amount}</span>.
+                </span>
+                <span className="text-[10px] text-zinc-500">
+                  Debt balance has been restored. Please resolve it with them.
+                </span>
+              </div>
+            </div>
+            <div className="w-full sm:w-auto text-right">
+              <button
+                onClick={() => handleResolveDisputed(s._id)}
+                className="bg-white/5 hover:bg-white/10 text-zinc-300 text-[11px] font-bold py-1.5 px-4 rounded-xl transition cursor-pointer w-full sm:w-auto"
+              >
+                Dismiss Alert
+              </button>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // Multiple alerts grouped collapsible card
+    return (
+      <div className="glass-panel rounded-3xl mb-6 overflow-hidden border border-zinc-800 bg-zinc-950/20 animate-in fade-in duration-300">
+        <button
+          onClick={() => setSettlementsExpanded(!settlementsExpanded)}
+          className="w-full p-4 flex items-center justify-between bg-zinc-900/40 hover:bg-zinc-900/60 transition cursor-pointer border-b border-zinc-800/50"
+        >
+          <div className="flex items-center gap-3">
+            <div className="bg-amber-500/10 p-2 rounded-xl text-amber-400 relative">
+              <Bell size={16} />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full animate-ping" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full" />
+            </div>
+            <div className="text-left">
+              <span className="text-sm font-bold text-gray-200">Payment Updates & Disputes</span>
+              <p className="text-[10px] text-zinc-500">{totalAlerts} items require your review</p>
+            </div>
+          </div>
+          <div className="text-zinc-400 flex items-center gap-1.5">
+            <span className="text-xs font-semibold">{settlementsExpanded ? 'Hide Details' : 'Show Details'}</span>
+            {settlementsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </div>
+        </button>
+
+        {settlementsExpanded && (
+          <div className="p-3 flex flex-col gap-2.5 max-h-[250px] overflow-y-auto bg-zinc-950/40">
+            {/* Disputed Payments first (High Priority) */}
+            {visibleDisputed.map(s => (
+              <div key={s._id} className="p-3 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle size={15} className="text-rose-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-gray-200">
+                      <span className="text-rose-400 font-bold">{s.payeeId?.name}</span> disputed your payment of ₹{s.amount}.
+                    </span>
+                    <span className="text-[9px] text-zinc-500">Balance restored. Resolve with them.</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleResolveDisputed(s._id)}
+                  className="bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] font-bold py-1 px-3 rounded-lg transition self-end sm:self-center cursor-pointer"
+                >
+                  Dismiss Alert
+                </button>
+              </div>
+            ))}
+
+            {/* Received Payments needing review */}
+            {visibleReceived.map(s => {
+              const timeLeft = Math.max(0, Math.round((new Date(s.disputeExpiresAt) - new Date()) / (1000 * 60 * 60)));
+              return (
+                <div key={s._id} className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                  <div className="flex items-start gap-2.5">
+                    <Check size={15} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold text-gray-200">
+                        <span className="text-amber-400 font-bold">{s.payerId?.name}</span> paid you ₹{s.amount}.
+                      </span>
+                      <span className="text-[9px] text-zinc-500">Auto-settles in {timeLeft}h if not disputed.</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <button
+                      onClick={() => handleDispute(s._id)}
+                      className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold py-1 px-3 rounded-lg transition cursor-pointer"
+                    >
+                      Dispute
+                    </button>
+                    <button
+                      onClick={() => handleDismissReceived(s._id)}
+                      className="bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] font-bold py-1 px-3 rounded-lg transition cursor-pointer"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Home' },
@@ -296,6 +503,8 @@ const Dashboard = () => {
 
       {/* Main content */}
       <div className="px-4 md:px-8">
+        {renderPaymentReviewCenter()}
+        
         {/* Overview Cards */}
         <div className="grid grid-cols-2 gap-3 md:gap-4 mb-8">
           <div className="glass-panel p-4 md:p-5 rounded-3xl relative overflow-hidden">
@@ -423,8 +632,13 @@ const Dashboard = () => {
             }
             const isActive = location.pathname === item.path;
             return (
-              <Link key={item.path} to={item.path} className={`flex flex-col items-center gap-0.5 transition-colors ${isActive ? 'text-emerald-400' : 'text-gray-500 hover:text-gray-300'}`}>
-                <Icon size={22} />
+              <Link key={item.path} to={item.path} className={`flex flex-col items-center gap-0.5 transition-colors relative ${isActive ? 'text-emerald-400' : 'text-gray-500 hover:text-gray-300'}`}>
+                <div className="relative">
+                  <Icon size={22} />
+                  {item.label === 'Home' && totalAlerts > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border border-zinc-900 shadow-md" />
+                  )}
+                </div>
                 <span className="text-[10px] font-medium">{item.label}</span>
               </Link>
             );

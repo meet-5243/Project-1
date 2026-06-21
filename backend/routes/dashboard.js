@@ -2,8 +2,11 @@ const express = require('express');
 const router = express.Router();
 const NetBalance = require('../models/NetBalance');
 const Expense = require('../models/Expense');
+const Settlement = require('../models/Settlement');
+const User = require('../models/User');
 const { authenticate } = require('./auth');
 const { updateNetBalance } = require('../utils/debtEngine');
+const { sendPushNotification } = require('../utils/notificationHelper');
 
 // Get personalized dashboard data (sorted balances)
 router.get('/', authenticate, async (req, res) => {
@@ -70,11 +73,8 @@ router.post('/pay', authenticate, async (req, res) => {
   try {
     const { payeeId, amount } = req.body; 
 
-    await updateNetBalance(req.userId, payeeId, amount);
-
     // Sweep and mark all pending expenses between these two users as settled (PAID_ONLINE)
     // because the dashboard payment settles their entire net balance.
-    const Expense = require('../models/Expense');
     const expensesToSettle = await Expense.find({
       $or: [
         { creatorId: payeeId, 'involvedMembers.userId': req.userId, 'involvedMembers.paymentStatus': 'PENDING' },
@@ -82,6 +82,7 @@ router.post('/pay', authenticate, async (req, res) => {
       ]
     });
 
+    const sweptExpenseIds = [];
     for (const exp of expensesToSettle) {
       let split;
       if (exp.creatorId.toString() === payeeId) {
@@ -93,14 +94,148 @@ router.post('/pay', authenticate, async (req, res) => {
       if (split) {
         split.paymentStatus = 'PAID_ONLINE';
         await exp.save();
+        sweptExpenseIds.push(exp._id);
       }
     }
 
+    // Net the balance immediately
+    await updateNetBalance(req.userId, payeeId, amount);
+
+    // Create Settlement tracking document (24-hour dispute window)
+    const disputeExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const settlement = new Settlement({
+      payerId: req.userId,
+      payeeId,
+      amount,
+      status: 'SETTLED',
+      sweptExpenses: sweptExpenseIds,
+      disputeExpiresAt
+    });
+    await settlement.save();
+
+    // Send push notification to payee
+    const payerUser = await User.findById(req.userId);
+    const payerName = payerUser ? payerUser.name : 'Someone';
+    await sendPushNotification(
+      payeeId,
+      '💸 Payment Received',
+      `${payerName} marked ₹${amount} as paid to you.`,
+      { url: '/' }
+    );
+
     res.json({ message: 'Payment recorded, balance netted, and specific expenses marked as paid' });
   } catch (error) {
+    console.error('Pay error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Get pending / active settlements for dashboard banners
+router.get('/settlement/pending', authenticate, async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Received settlements needing review (where current user is payee, status is SETTLED, and not expired)
+    const received = await Settlement.find({
+      payeeId: req.userId,
+      status: 'SETTLED',
+      disputeExpiresAt: { $gt: now }
+    }).populate('payerId', 'name email');
+
+    // Sent settlements that were disputed by the payee (where current user is payer, status is DISPUTED)
+    const disputed = await Settlement.find({
+      payerId: req.userId,
+      status: 'DISPUTED'
+    }).populate('payeeId', 'name email');
+
+    res.json({ received, disputed });
+  } catch (error) {
+    console.error('Pending settlements error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Dispute a settlement
+router.post('/settlement/dispute', authenticate, async (req, res) => {
+  try {
+    const { settlementId } = req.body;
+    const settlement = await Settlement.findById(settlementId);
+
+    if (!settlement) {
+      return res.status(404).json({ error: 'Settlement not found' });
+    }
+
+    // Only the payee can dispute the settlement
+    if (settlement.payeeId.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Unauthorized to dispute this settlement' });
+    }
+
+    if (settlement.status !== 'SETTLED') {
+      return res.status(400).json({ error: 'Settlement is not in a disputable state' });
+    }
+
+    if (settlement.disputeExpiresAt < new Date()) {
+      return res.status(400).json({ error: 'Dispute window of 24 hours has expired' });
+    }
+
+    // 1. Mark status as DISPUTED
+    settlement.status = 'DISPUTED';
+    await settlement.save();
+
+    // 2. Revert the net balance change (payee pays payer back to restore debt)
+    await updateNetBalance(settlement.payeeId, settlement.payerId, settlement.amount);
+
+    // 3. Roll back swept expenses to PENDING
+    if (settlement.sweptExpenses && settlement.sweptExpenses.length > 0) {
+      await Expense.updateMany(
+        { _id: { $in: settlement.sweptExpenses } },
+        { $set: { 'involvedMembers.$[elem].paymentStatus': 'PENDING' } },
+        { arrayFilters: [{ 'elem.userId': settlement.payerId }] }
+      );
+    }
+
+    // 4. Send push notification to the payer
+    const payeeUser = await User.findById(req.userId);
+    const payeeName = payeeUser ? payeeUser.name : 'Someone';
+    await sendPushNotification(
+      settlement.payerId,
+      '⚠️ Payment Disputed',
+      `${payeeName} disputed your payment of ₹${settlement.amount}. Balance restored.`,
+      { url: '/' }
+    );
+
+    res.json({ message: 'Settlement disputed, balance rolled back, and expenses restored' });
+  } catch (error) {
+    console.error('Dispute error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Dismiss/resolve a disputed alert on payer side
+router.post('/settlement/resolve', authenticate, async (req, res) => {
+  try {
+    const { settlementId } = req.body;
+    const settlement = await Settlement.findById(settlementId);
+
+    if (!settlement) {
+      return res.status(404).json({ error: 'Settlement not found' });
+    }
+
+    // Only the payer can resolve/dismiss their own dispute alert
+    if (settlement.payerId.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Unauthorized to resolve this settlement' });
+    }
+
+    settlement.status = 'RESOLVED';
+    await settlement.save();
+
+    res.json({ message: 'Dispute alert dismissed' });
+  } catch (error) {
+    console.error('Resolve error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 // Personal Payment Insights: "Where My Money Goes"
 // Returns lifetime total the logged-in user has ever paid for each other member,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './components/Dashboard';
@@ -7,6 +7,70 @@ import GroupDetails from './components/GroupDetails';
 import Profile from './components/Profile';
 import ExpenseAnalytics from './components/ExpenseAnalytics';
 import ExpenseHistory from './components/ExpenseHistory';
+import axios from 'axios';
+
+// Helper to convert base64 VAPID public key to Uint8Array for PushManager
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function registerPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.log('Push notifications are not supported on this browser/device');
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+
+    let permission = Notification.permission;
+    if (permission === 'default') {
+      permission = await Notification.requestPermission();
+    }
+
+    if (permission !== 'granted') {
+      console.log('Push notification permission denied/dismissed');
+      return;
+    }
+
+    const vapidRes = await axios.get('/api/notifications/vapid-public-key');
+    const vapidPublicKey = vapidRes.data.publicKey;
+
+    const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedKey
+    });
+
+    await axios.post('/api/notifications/subscribe', { subscription });
+    console.log('Successfully subscribed to PWA Push Notifications!');
+  } catch (error) {
+    console.error('Error setting up push notifications:', error);
+  }
+}
+
+const PushManager = () => {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      registerPushNotifications();
+    }
+  }, [user]);
+
+  return null;
+};
 
 const AuthScreen = () => {
   const { login, signup } = useAuth();
@@ -105,6 +169,7 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
+      <PushManager />
       <Router>
         <Routes>
           <Route path="/login" element={<AuthScreen />} />

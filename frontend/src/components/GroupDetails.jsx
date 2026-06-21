@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, UserPlus, Receipt, Users, PlusCircle, ChevronDown, ChevronUp, Trophy, TrendingUp, BarChart2, Edit2, Trash2, QrCode } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -67,10 +67,28 @@ const GroupDetails = () => {
     }
   };
 
+  const location = useLocation();
+
   useEffect(() => {
     fetchGroupDetails();
     fetchExpenses();
   }, [id]);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    if (queryParams.get('addExpense') === 'true' && group) {
+      const defaultSplits = {};
+      group.members.forEach(m => {
+        defaultSplits[m._id] = '';
+      });
+      setSplits(defaultSplits);
+      if (user) setPayerId(user._id);
+      setShowExpenseForm(true);
+      
+      // Clean query string from browser URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [group, location.search, user]);
 
   const handleInvite = async (e) => {
     e.preventDefault();

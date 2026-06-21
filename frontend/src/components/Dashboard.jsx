@@ -4,7 +4,7 @@ import PayNowButton from './PayNowButton';
 import BudgetTracker from './BudgetTracker';
 import QrPaymentModal from './QrPaymentModal';
 import { useAuth } from '../context/AuthContext';
-import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target, History, QrCode, Bell, AlertTriangle, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Users, LogOut, Wallet, UserCircle2, BarChart2, HandCoins, X, LayoutDashboard, Target, History, QrCode, Bell, AlertTriangle, ChevronDown, ChevronUp, Check, PlusCircle } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -144,6 +144,19 @@ const Dashboard = () => {
       return [];
     }
   });
+
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
+  const [groups, setGroups] = useState([]);
+
+  const handleOpenAddExpense = async () => {
+    setShowAddExpenseModal(true);
+    try {
+      const res = await axios.get('/api/groups');
+      setGroups(res.data.groups);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+    }
+  };
 
   const handleConfirmQrPayment = async (payeeId, amount) => {
     await axios.post('/api/dashboard/pay', { payeeId, amount });
@@ -476,6 +489,50 @@ const Dashboard = () => {
         onConfirmPayment={() => handleConfirmQrPayment(selectedQrBalance?.otherUser?._id, selectedQrBalance?.amount)}
       />
 
+      {/* Select Group for Shortcut Add Expense Modal */}
+      {showAddExpenseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950/50">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <PlusCircle className="text-emerald-400" size={20} /> Select Group
+              </h2>
+              <button onClick={() => setShowAddExpenseModal(false)} className="text-zinc-400 hover:text-white p-1.5 bg-white/5 rounded-full hover:bg-white/10">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-3 max-h-[50vh] overflow-y-auto">
+              {groups.map(g => (
+                <Link
+                  key={g._id}
+                  to={`/groups/${g._id}?addExpense=true`}
+                  className="p-4 rounded-2xl flex items-center justify-between bg-zinc-950/60 border border-white/5 hover:border-emerald-500/30 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 font-bold">
+                      {g.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="font-bold text-sm text-gray-100">{g.name}</span>
+                      <span className="text-[10px] text-zinc-500">{g.members.length} members</span>
+                    </div>
+                  </div>
+                  <span className="text-emerald-400 text-sm font-bold">&#8594;</span>
+                </Link>
+              ))}
+              {groups.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-sm text-zinc-500">You are not in any groups yet.</p>
+                  <Link to="/groups" className="text-emerald-400 text-xs font-bold mt-2 inline-block hover:underline">
+                    Create or Join a Group
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex justify-between items-center glass-panel p-4 rounded-2xl mx-4 mt-4 mb-6 md:mx-8 md:mt-8">
         <div className="flex items-center gap-3">
@@ -520,7 +577,7 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Link to="/history" className="glass-panel p-4 rounded-3xl flex items-center justify-between border border-white/5 hover:border-cyan-500/30 transition duration-300 group">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-cyan-500/10 rounded-2xl group-hover:bg-cyan-500/20 transition text-cyan-400">
@@ -533,7 +590,7 @@ const Dashboard = () => {
             </div>
             <span className="text-cyan-400 text-lg group-hover:translate-x-1 transition-transform">&#8594;</span>
           </Link>
-          <button onClick={() => setInsightsOpen(true)} className="glass-panel p-4 rounded-3xl flex items-center justify-between border border-white/5 hover:border-pink-500/30 transition duration-300 group text-left w-full">
+          <button onClick={() => setInsightsOpen(true)} className="glass-panel p-4 rounded-3xl flex items-center justify-between border border-white/5 hover:border-pink-500/30 transition duration-300 group text-left w-full cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-pink-500/10 rounded-2xl group-hover:bg-pink-500/20 transition" style={{ color: '#f472b6' }}>
                 <HandCoins size={24} />
@@ -544,6 +601,18 @@ const Dashboard = () => {
               </div>
             </div>
             <span className="text-pink-400 text-lg group-hover:translate-x-1 transition-transform" style={{ color: '#f472b6' }}>&#8594;</span>
+          </button>
+          <button onClick={handleOpenAddExpense} className="glass-panel p-4 rounded-3xl flex items-center justify-between border border-white/5 hover:border-emerald-500/30 transition duration-300 group text-left w-full cursor-pointer">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-500/10 rounded-2xl group-hover:bg-emerald-500/20 transition text-emerald-400">
+                <PlusCircle size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-gray-100">Add Group Expense</h3>
+                <p className="text-[11px] text-zinc-500">Record a new expense split for any group</p>
+              </div>
+            </div>
+            <span className="text-emerald-400 text-lg group-hover:translate-x-1 transition-transform">&#8594;</span>
           </button>
         </div>
 

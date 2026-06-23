@@ -36,8 +36,26 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/clearsync';
 
 mongoose.connect(MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB');
+    
+    // Migration: Update existing expenses to set date = createdAt if date is missing
+    try {
+      const Expense = require('./models/Expense');
+      const expenses = await Expense.find({ date: { $exists: false } });
+      let migratedCount = 0;
+      for (const exp of expenses) {
+        exp.date = exp.createdAt || new Date();
+        await exp.save();
+        migratedCount++;
+      }
+      if (migratedCount > 0) {
+        console.log(`Migrated ${migratedCount} expenses to have date = createdAt`);
+      }
+    } catch (err) {
+      console.error('Migration error:', err);
+    }
+
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch(err => console.error('MongoDB connection error:', err));

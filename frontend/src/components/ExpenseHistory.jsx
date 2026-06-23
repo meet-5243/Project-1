@@ -167,7 +167,7 @@ const ExpenseHistory = () => {
       const allSplitsPaid = exp.involvedMembers.every(m => m.paymentStatus !== 'PENDING');
       const status = allSplitsPaid ? 'Fully Settled' : 'Pending Splits';
       
-      const date = new Date(exp.createdAt).toLocaleDateString('en-US', {
+      const date = new Date(exp.date || exp.createdAt).toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',
         year: 'numeric'
@@ -227,7 +227,7 @@ const ExpenseHistory = () => {
       const allSplitsPaid = exp.involvedMembers.every(m => m.paymentStatus !== 'PENDING');
       const status = allSplitsPaid ? 'Fully Settled' : 'Pending Splits';
       
-      const date = new Date(exp.createdAt).toLocaleDateString('en-US', {
+      const date = new Date(exp.date || exp.createdAt).toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',
         year: 'numeric'
@@ -631,7 +631,7 @@ const ExpenseHistory = () => {
 
                       <p className="text-[10px] text-gray-500 flex items-center gap-1 font-semibold">
                         <Calendar size={12} className="opacity-75" />
-                        {formatDate(exp.createdAt)}
+                        {formatDate(exp.date || exp.createdAt)}
                       </p>
                     </div>
                   </div>

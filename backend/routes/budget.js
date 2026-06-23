@@ -61,7 +61,7 @@ router.get('/status', authenticate, async (req, res) => {
 
     // Find expenses created in the current month where the user is an involved member
     const expenses = await Expense.find({
-      createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+      date: { $gte: startOfMonth, $lte: endOfMonth },
       'involvedMembers.userId': req.userId
     });
 

@@ -10,6 +10,7 @@ const expenseSchema = new mongoose.Schema({
     amountOwed: { type: Number, required: true },
     paymentStatus: { type: String, enum: ['PENDING', 'PAID_ONLINE', 'PAID_PHYSICALLY'], default: 'PENDING' }
   }],
+  date: { type: Date, default: Date.now },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Expense', expenseSchema);

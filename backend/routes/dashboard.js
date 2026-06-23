@@ -340,7 +340,7 @@ router.get('/analytics', authenticate, async (req, res) => {
 
       // Fetch all relevant expenses in that range
       const expenses = await Expense.find({
-        createdAt: { $gte: startOfWeek, $lt: endOfWeek },
+        date: { $gte: startOfWeek, $lt: endOfWeek },
         $or: [
           { creatorId: userObjId },
           { 'involvedMembers.userId': userObjId }
@@ -352,7 +352,7 @@ router.get('/analytics', authenticate, async (req, res) => {
       const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
       expenses.forEach(exp => {
-        const d = new Date(exp.createdAt);
+        const d = new Date(exp.date);
         // Compute bucket index: 0=Mon,6=Sun
         const rawDay = d.getDay(); // 0=Sun
         const idx = rawDay === 0 ? 6 : rawDay - 1;
@@ -390,7 +390,7 @@ router.get('/analytics', authenticate, async (req, res) => {
       const endOfMonth = new Date(year, month + 1, 1);
 
       const expenses = await Expense.find({
-        createdAt: { $gte: startOfMonth, $lt: endOfMonth },
+        date: { $gte: startOfMonth, $lt: endOfMonth },
         $or: [
           { creatorId: userObjId },
           { 'involvedMembers.userId': userObjId }
@@ -401,7 +401,7 @@ router.get('/analytics', authenticate, async (req, res) => {
       const buckets = Array(daysInMonth).fill(0);
 
       expenses.forEach(exp => {
-        const d = new Date(exp.createdAt);
+        const d = new Date(exp.date);
         const dayIdx = d.getDate() - 1; // 0-indexed
         const myMember = exp.involvedMembers.find(
           m => m.userId.toString() === userId
@@ -434,7 +434,7 @@ router.get('/analytics', authenticate, async (req, res) => {
       const endOfYear = new Date(year + 1, 0, 1);
 
       const expenses = await Expense.find({
-        createdAt: { $gte: startOfYear, $lt: endOfYear },
+        date: { $gte: startOfYear, $lt: endOfYear },
         $or: [
           { creatorId: userObjId },
           { 'involvedMembers.userId': userObjId }
@@ -446,7 +446,7 @@ router.get('/analytics', authenticate, async (req, res) => {
       const buckets = Array(12).fill(0);
 
       expenses.forEach(exp => {
-        const m = new Date(exp.createdAt).getMonth();
+        const m = new Date(exp.date).getMonth();
         const myMember = exp.involvedMembers.find(
           mem => mem.userId.toString() === userId
         );

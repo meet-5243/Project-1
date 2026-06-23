@@ -7,6 +7,13 @@ import HomeButton from './HomeButton';
 import QrPaymentModal from './QrPaymentModal';
 
 const GroupDetails = () => {
+  const getLocalDateStringInit = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const { id } = useParams();
   const { user } = useAuth();
   const [group, setGroup] = useState(null);
@@ -24,13 +31,7 @@ const GroupDetails = () => {
   const [expandedExpenses, setExpandedExpenses] = useState({});
   const [activeLeftTab, setActiveLeftTab] = useState('members'); // 'members' or 'leaderboards'
   const [selectedQrExpense, setSelectedQrExpense] = useState(null);
-
-  const getLocalDateStringInit = (d) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const [expenseDate, setExpenseDate] = useState(getLocalDateStringInit(new Date()));
 
   const todayInit = new Date();
   const initialToday = getLocalDateStringInit(todayInit);
@@ -132,7 +133,8 @@ const GroupDetails = () => {
           amount: totalAmount,
           description: expenseDesc,
           involvedMembers,
-          payerId
+          payerId,
+          date: expenseDate
         });
         alert("Expense updated successfully!");
       } else {
@@ -141,7 +143,8 @@ const GroupDetails = () => {
           amount: totalAmount,
           description: expenseDesc,
           involvedMembers,
-          payerId
+          payerId,
+          date: expenseDate
         });
       }
 
@@ -150,6 +153,7 @@ const GroupDetails = () => {
       setExpenseAmount('');
       setExpenseDesc('');
       setSplits({});
+      setExpenseDate(getLocalDateStringInit(new Date()));
       fetchExpenses();
     } catch (error) {
       alert(error.response?.data?.error || 'Failed to save expense');
@@ -162,6 +166,7 @@ const GroupDetails = () => {
     const nextShow = !showExpenseForm;
     setShowExpenseForm(nextShow);
     if (nextShow) {
+      setExpenseDate(getLocalDateStringInit(new Date()));
       if (editingExpense) {
         setEditingExpense(null);
         setExpenseAmount('');
@@ -182,6 +187,7 @@ const GroupDetails = () => {
       setExpenseAmount('');
       setExpenseDesc('');
       setSplits({});
+      setExpenseDate(getLocalDateStringInit(new Date()));
     }
   };
 
@@ -190,6 +196,7 @@ const GroupDetails = () => {
     setExpenseDesc(expense.description);
     setExpenseAmount(expense.amount.toString());
     setPayerId(expense.creatorId._id);
+    setExpenseDate(getLocalDateStringInit(new Date(expense.date || expense.createdAt)));
     
     // Populate splits
     const initialSplits = {};
@@ -342,7 +349,7 @@ const GroupDetails = () => {
       return exp.creatorId._id === selectedMember;
     }
 
-    const expDateStr = toLocalDateStr(exp.createdAt);
+    const expDateStr = toLocalDateStr(exp.date || exp.createdAt);
     if (filterType === 'today')         return expDateStr === initialToday;
     if (filterType === 'yesterday')     return expDateStr === initialYesterday;
     if (filterType === 'specific_date') return expDateStr === selectedDate;
@@ -376,7 +383,7 @@ const GroupDetails = () => {
               <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                 Paid by <span className="font-semibold text-gray-300">{expense.creatorId.name}</span>
                 <span className="text-white/20">•</span>
-                <span>{new Date(expense.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                <span>{new Date(expense.date || expense.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -631,8 +638,20 @@ const GroupDetails = () => {
                   className="w-full bg-[#0a0a0a]/50 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
                   value={expenseAmount} onChange={e => handleAmountChange(e.target.value)} required 
                 />
+
+                <div>
+                  <label className="text-sm font-semibold mb-2 text-gray-300 block">Date of Expense</label>
+                  <input 
+                    type="date" 
+                    className="w-full bg-[#0a0a0a]/50 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-emerald-500 transition"
+                    style={{ colorScheme: 'dark' }}
+                    value={expenseDate} 
+                    onChange={e => setExpenseDate(e.target.value)} 
+                    required 
+                  />
+                </div>
                 
-                <div className="mb-4">
+                <div>
                   <label className="text-sm font-semibold mb-2 text-gray-300 block">Who paid?</label>
                   <select 
                     value={payerId} 

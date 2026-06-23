@@ -8,7 +8,7 @@ const { updateNetBalance } = require('../utils/debtEngine');
 // Add a new expense
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { groupId, amount, description, involvedMembers, payerId } = req.body;
+    const { groupId, amount, description, involvedMembers, payerId, date } = req.body;
     
     // involvedMembers is an array of { userId, amountOwed }
     
@@ -40,7 +40,8 @@ router.post('/', authenticate, async (req, res) => {
       creatorId: actualPayerId,
       amount,
       description,
-      involvedMembers: processedInvolvedMembers
+      involvedMembers: processedInvolvedMembers,
+      date: date ? new Date(date) : undefined
     });
     
     await expense.save();
@@ -88,32 +89,32 @@ router.get('/history', authenticate, async (req, res) => {
       if (filterType === 'today') {
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
-        query.createdAt = { $gte: start, $lte: end };
+        query.date = { $gte: start, $lte: end };
       } else if (filterType === 'yesterday') {
         start.setDate(now.getDate() - 1);
         start.setHours(0, 0, 0, 0);
         end.setDate(now.getDate() - 1);
         end.setHours(23, 59, 59, 999);
-        query.createdAt = { $gte: start, $lte: end };
+        query.date = { $gte: start, $lte: end };
       } else if (filterType === 'week') {
         start.setDate(now.getDate() - 7);
         start.setHours(0, 0, 0, 0);
-        query.createdAt = { $gte: start };
+        query.date = { $gte: start };
       } else if (filterType === 'month') {
         start.setDate(now.getDate() - 30);
         start.setHours(0, 0, 0, 0);
-        query.createdAt = { $gte: start };
+        query.date = { $gte: start };
       }
     } else if ((filterType === 'custom' || !filterType) && startDate && endDate) {
       const customStart = new Date(startDate);
       customStart.setHours(0, 0, 0, 0);
       const customEnd = new Date(endDate);
       customEnd.setHours(23, 59, 59, 999);
-      query.createdAt = { $gte: customStart, $lte: customEnd };
+      query.date = { $gte: customStart, $lte: customEnd };
     }
 
     const expenses = await Expense.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ date: -1 })
       .populate('groupId', 'name')
       .populate('creatorId', 'name email')
       .populate('involvedMembers.userId', 'name email');
@@ -129,7 +130,7 @@ router.get('/history', authenticate, async (req, res) => {
 router.get('/:groupId', authenticate, async (req, res) => {
   try {
     const expenses = await Expense.find({ groupId: req.params.groupId })
-      .sort({ createdAt: -1 })
+      .sort({ date: -1 })
       .populate('creatorId', 'name email')
       .populate('involvedMembers.userId', 'name email');
 
@@ -221,7 +222,7 @@ router.delete('/:expenseId', authenticate, async (req, res) => {
 router.put('/:expenseId', authenticate, async (req, res) => {
   try {
     const { expenseId } = req.params;
-    const { amount, description, involvedMembers, payerId } = req.body;
+    const { amount, description, involvedMembers, payerId, date } = req.body;
 
     const expense = await Expense.findById(expenseId);
     if (!expense) return res.status(404).json({ error: 'Expense not found' });
@@ -273,6 +274,9 @@ router.put('/:expenseId', authenticate, async (req, res) => {
     expense.description = description;
     expense.creatorId = actualPayerId;
     expense.involvedMembers = processedInvolvedMembers;
+    if (date) {
+      expense.date = new Date(date);
+    }
 
     await expense.save();
 
